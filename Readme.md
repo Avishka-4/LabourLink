@@ -1,6 +1,6 @@
 # LabourLink - Migrant Workers Management System
 
-LabourLink is a comprehensive, web-based digital platform designed to bridge the gap between migrant workers, job seekers, recruitment agencies, and administrative authorities. Developed as a project for the Sabaragamuwa University of Sri Lanka, this system aims to empower migrant workers by providing a centralized hub for employment opportunities and workplace grievance reporting.
+LabourLink is a comprehensive, web-based digital platform designed to bridge the gap between migrant workers, job seekers, recruitment agencies, and administrative authorities. Developed as a project for the Sabaragamuwa University of Sri Lanka.
 
 ---
 
@@ -36,16 +36,6 @@ The system is built using modern, enterprise-grade technologies to ensure scalab
 
 ---
 
-## 📋 Key Features
-
-- **Centralized Authentication**: Secure session management for all user roles.
-- **Worker Welfare**: Specialized interface for filing grievances and accessing legal rights information.
-- **Job Lifecycle Management**: Tracking applications from "Pending" to "Interviewed" or "Rejected".
-- **Automated Notifications**: Real-time updates via SMS, Email, and Push notifications.
-- **Public Intelligence**: A CMS-driven module for government labor updates and policy changes.
-- **Monetized Engine**: Tiered pricing for agencies to post and "boost" job advertisements.
-
----
 
 ## 🏗️ System Architecture
 
@@ -55,14 +45,6 @@ The database schema is designed for data integrity and includes entities for use
 
 ---
 
-## 💻 Installation & Setup (Hardware Requirements)
-
-To run or access the system efficiently, the following environment is recommended:
-
-- **Server-Side**: Minimum 1.0 GHz Processor, 512 MB RAM (1 GB recommended), and 500 MB disk space.
-- **Client-Side**: 1.6 GHz Processor, 2 GB RAM minimum, and a minimum display resolution of 1280x720.
-
----
 
 ## 👥 Project Team (Group 03)
 
