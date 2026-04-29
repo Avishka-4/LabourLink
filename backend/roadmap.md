@@ -2,6 +2,8 @@
 
 This document outlines the steps to build the .NET backend for the LabourLink application, incorporating a hybrid REST and GraphQL API, and setting up CI/CD pipelines for automated deployment.
 
+
+
 ## 1. Project Initialization (Completed)
 
 - Set up a new .NET solution with separate projects for the API, Core Logic, and Data Access.
