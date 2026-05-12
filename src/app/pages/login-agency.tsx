@@ -7,21 +7,30 @@ import { Label } from '../components/ui/label';
 import { Checkbox } from '../components/ui/checkbox';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import { authService } from '@/services/authService';
 
 export function AgencyLogin() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const result = await authService.login(email, password);
       toast.success('Login successful! Welcome to Agency Portal');
-      navigate('/agency');
-    }, 1500);
+      if (result.role === 'RecruitmentAgency') {
+        navigate('/agency');
+      } else {
+        navigate('/login');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -55,6 +64,8 @@ export function AgencyLogin() {
                   type="email"
                   placeholder="agency@example.com"
                   className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -69,6 +80,8 @@ export function AgencyLogin() {
                   type="password"
                   placeholder="Enter your password"
                   className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
@@ -81,7 +94,7 @@ export function AgencyLogin() {
                   Remember me
                 </Label>
               </div>
-              <a href="#" className="text-sm text-emerald-600 hover:underline">
+              <a href="/forgot-password" className="text-sm text-emerald-600 hover:underline">
                 Forgot password?
               </a>
             </div>

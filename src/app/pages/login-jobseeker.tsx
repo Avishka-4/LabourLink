@@ -8,22 +8,31 @@ import { Checkbox } from '../components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import { authService } from '@/services/authService';
 
 export function JobSeekerLogin() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [language, setLanguage] = useState('en');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const result = await authService.login(email, password);
       toast.success('Login successful! Welcome to Job Seeker Portal');
-      navigate('/jobseeker');
-    }, 1500);
+      if (result.role === 'JobSeeker') {
+        navigate('/jobseeker');
+      } else {
+        navigate('/login');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -73,6 +82,8 @@ export function JobSeekerLogin() {
                   type="text"
                   placeholder="Enter your ID or email"
                   className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -90,6 +101,8 @@ export function JobSeekerLogin() {
                   type="password"
                   placeholder="Enter your password"
                   className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
@@ -102,7 +115,7 @@ export function JobSeekerLogin() {
                   Remember me
                 </Label>
               </div>
-              <a href="#" className="text-sm text-purple-600 hover:underline">
+              <a href="/forgot-password" className="text-sm text-purple-600 hover:underline">
                 Forgot password?
               </a>
             </div>

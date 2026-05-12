@@ -8,6 +8,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
+import { authService } from '@/services/authService';
 
 export function WorkerRegistration() {
   const navigate = useNavigate();
@@ -52,13 +53,22 @@ export function WorkerRegistration() {
     }
 
     setIsLoading(true);
-
-    // Simulate registration
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await authService.register({
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        fullName: formData.fullName,
+        role: 'Worker',
+        phoneNumber: formData.phoneNumber,
+      });
       toast.success('Registration successful! You can now login.');
       navigate('/login/worker');
-    }, 2000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

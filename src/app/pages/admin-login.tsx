@@ -7,21 +7,30 @@ import { Label } from '../components/ui/label';
 import { Checkbox } from '../components/ui/checkbox';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
+import { authService } from '@/services/authService';
 
 export function AdminLogin() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
-    // Simulate authentication
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      const result = await authService.login(email, password);
       toast.success('Login successful! Welcome to Admin Portal');
-      navigate('/admin');
-    }, 1500);
+      if (result.role === 'Administrator') {
+        navigate('/admin');
+      } else {
+        navigate('/login');
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Login failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -47,6 +56,8 @@ export function AdminLogin() {
                   type="text"
                   placeholder="Enter your admin ID"
                   className="pl-10"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>
@@ -61,6 +72,8 @@ export function AdminLogin() {
                   type="password"
                   placeholder="Enter your password"
                   className="pl-10"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
                   required
                 />
               </div>
@@ -73,7 +86,7 @@ export function AdminLogin() {
                   Remember me
                 </Label>
               </div>
-              <a href="#" className="text-sm text-indigo-600 hover:underline">
+              <a href="/forgot-password" className="text-sm text-indigo-600 hover:underline">
                 Forgot password?
               </a>
             </div>
