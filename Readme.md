@@ -33,6 +33,7 @@ The system is built using modern, enterprise-grade technologies to ensure scalab
 - **Database**: MySQL 8.0+
 - **Cloud Hosting**: AWS (ECS & S3)
 - **Auth**: JWT & OAuth 2.0 with Role-Based Access Control (RBAC)
+_ **Mailing**: Mailtrap
 
 ---
 

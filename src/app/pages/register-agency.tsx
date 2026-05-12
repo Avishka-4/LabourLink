@@ -8,6 +8,7 @@ import { Checkbox } from '../components/ui/checkbox';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
+import { authService } from '@/services/authService';
 
 export function AgencyRegistration() {
   const navigate = useNavigate();
@@ -63,13 +64,22 @@ export function AgencyRegistration() {
     }
 
     setIsLoading(true);
-
-    // Simulate registration
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await authService.register({
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        fullName: formData.agencyName,
+        role: 'RecruitmentAgency',
+        phoneNumber: formData.phone,
+      });
       toast.success('Registration submitted for admin approval!');
       navigate('/login/agency');
-    }, 2000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

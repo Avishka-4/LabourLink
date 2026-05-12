@@ -1,0 +1,6 @@
+@LabourLinkAPI_HostAddress = http://localhost:5007
+
+GET {{LabourLinkAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

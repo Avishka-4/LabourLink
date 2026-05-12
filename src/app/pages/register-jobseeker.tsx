@@ -9,6 +9,7 @@ import { Textarea } from '../components/ui/textarea';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
+import { authService } from '@/services/authService';
 
 export function JobSeekerRegistration() {
   const navigate = useNavigate();
@@ -56,13 +57,22 @@ export function JobSeekerRegistration() {
     }
 
     setIsLoading(true);
-
-    // Simulate registration
-    setTimeout(() => {
-      setIsLoading(false);
+    try {
+      await authService.register({
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        fullName: formData.fullName,
+        role: 'JobSeeker',
+        phoneNumber: formData.phoneNumber,
+      });
       toast.success('Registration successful! You can now login and browse jobs.');
       navigate('/login/jobseeker');
-    }, 2000);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
