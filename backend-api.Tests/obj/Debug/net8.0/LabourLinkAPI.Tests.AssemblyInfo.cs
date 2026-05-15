@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("LabourLinkAPI.Tests")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+bac026b32150db77ecbd01912cba5b3c6b1b03d0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+be766a391ee4a12c342a25122038ddb8486fe52a")]
 [assembly: System.Reflection.AssemblyProductAttribute("LabourLinkAPI.Tests")]
 [assembly: System.Reflection.AssemblyTitleAttribute("LabourLinkAPI.Tests")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

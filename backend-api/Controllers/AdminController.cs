@@ -270,6 +270,30 @@ public sealed class AdminController : ControllerBase
         return Ok(new MessageResponse { Message = "Complaint status updated" });
     }
 
+    [HttpGet("news")]
+    [ProducesResponseType(typeof(List<NewsResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<NewsResponse>>> GetNews(CancellationToken cancellationToken = default)
+    {
+        var newsItems = await _db.News
+            .AsNoTracking()
+            .OrderByDescending(n => n.CreatedAt)
+            .Select(n => new NewsResponse
+            {
+                NewsId = n.NewsId,
+                Title = n.Title,
+                Content = n.Content,
+                Category = n.Category.ToString(),
+                Priority = (int)n.Priority,
+                ImageUrl = n.FeaturedImageUrl,
+                Status = n.IsPublished ? "Published" : "Draft",
+                CreatedAt = n.CreatedAt,
+                PublishedAt = n.PublishedAt,
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(newsItems);
+    }
+
     [HttpPost("news")]
     [ProducesResponseType(typeof(NewsResponse), StatusCodes.Status201Created)]
     public async Task<ActionResult<NewsResponse>> CreateNews(

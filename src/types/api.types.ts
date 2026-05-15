@@ -70,3 +70,15 @@ export interface SavedJobResponse {
   savedDate: string;
   postedDate: string;
 }
+
+export interface NewsResponse {
+  newsId: string;
+  title: string;
+  content: string;
+  category: string;
+  priority: number;
+  imageUrl?: string | null;
+  status: string;
+  createdAt: string;
+  publishedAt?: string | null;
+}

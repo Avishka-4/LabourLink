@@ -1,4 +1,5 @@
 import { apiRequest } from '@/hooks/useApi';
+import type { NewsResponse } from '@/types/api.types';
 
 export type AdminStats = {
   totalUsers: number;
@@ -46,6 +47,7 @@ export const adminService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
     }),
+  listNews: async () => apiRequest<NewsResponse[]>('/admin/news'),
   createNews: async (payload: Record<string, unknown>) =>
     apiRequest('/admin/news', {
       method: 'POST',
