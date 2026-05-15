@@ -9,11 +9,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { authService } from '@/services/authService';
+import { useLanguage } from '../contexts/language-context';
 
 export function JobSeekerLogin() {
   const navigate = useNavigate();
+  const { language, setLanguage, t } = useLanguage();
   const [isLoading, setIsLoading] = useState(false);
-  const [language, setLanguage] = useState('en');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
@@ -22,14 +23,14 @@ export function JobSeekerLogin() {
     setIsLoading(true);
     try {
       const result = await authService.login(email, password);
-      toast.success('Login successful! Welcome to Job Seeker Portal');
+      toast.success(t('login_success_jobseeker'));
       if (result.role === 'JobSeeker') {
         navigate('/jobseeker');
       } else {
         navigate('/login');
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Login failed');
+      toast.error(err instanceof Error ? err.message : t('login_failed'));
     } finally {
       setIsLoading(false);
     }
@@ -44,21 +45,18 @@ export function JobSeekerLogin() {
             onClick={() => navigate('/')}
           >
             <ArrowLeft className="size-4 mr-2" />
-            Back to Home
+            {t('back_to_home')}
           </Button>
 
-          <Select value={language} onValueChange={setLanguage}>
+          <Select value={language} onValueChange={(value) => setLanguage(value as 'en' | 'si' | 'ta')}>
             <SelectTrigger className="w-32">
               <Globe className="size-4 mr-2" />
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="en">English</SelectItem>
-              <SelectItem value="ar">العربية</SelectItem>
-              <SelectItem value="hi">हिन्दी</SelectItem>
-              <SelectItem value="tl">Tagalog</SelectItem>
-              <SelectItem value="ur">اردو</SelectItem>
-              <SelectItem value="bn">বাংলা</SelectItem>
+              <SelectItem value="si">සිංහල</SelectItem>
+              <SelectItem value="ta">தமிழ்</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -68,19 +66,19 @@ export function JobSeekerLogin() {
             <div className="bg-purple-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
               <Briefcase className="size-8 text-purple-600" />
             </div>
-            <h2 className="mb-2">Job Seeker Portal</h2>
-            <p className="text-gray-600">Sign in to find your next opportunity</p>
+            <h2 className="mb-2">{t('jobseeker_portal')}</h2>
+            <p className="text-gray-600">{t('jobseeker_signin_subtitle')}</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="jobseeker-id">Applicant ID / Email</Label>
+              <Label htmlFor="jobseeker-id">{t('jobseeker_id_label')}</Label>
               <div className="relative">
                 <CreditCard className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
                   id="jobseeker-id"
                   type="text"
-                  placeholder="Enter your ID or email"
+                  placeholder={t('jobseeker_id_placeholder')}
                   className="pl-10"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -88,18 +86,18 @@ export function JobSeekerLogin() {
                 />
               </div>
               <p className="text-xs text-gray-500">
-                Use the ID provided during registration
+                {t('jobseeker_id_hint')}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="jobseeker-password">Password</Label>
+              <Label htmlFor="jobseeker-password">{t('password_label')}</Label>
               <div className="relative">
                 <Lock className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
                 <Input
                   id="jobseeker-password"
                   type="password"
-                  placeholder="Enter your password"
+                  placeholder={t('password_placeholder')}
                   className="pl-10"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -112,11 +110,11 @@ export function JobSeekerLogin() {
               <div className="flex items-center gap-2">
                 <Checkbox id="remember-jobseeker" />
                 <Label htmlFor="remember-jobseeker" className="text-sm cursor-pointer">
-                  Remember me
+                  {t('remember_me')}
                 </Label>
               </div>
               <a href="/forgot-password" className="text-sm text-purple-600 hover:underline">
-                Forgot password?
+                {t('forgot_password')}
               </a>
             </div>
 
@@ -125,15 +123,15 @@ export function JobSeekerLogin() {
               className="w-full bg-purple-600 hover:bg-purple-700"
               disabled={isLoading}
             >
-              {isLoading ? 'Signing in...' : 'Sign In'}
+              {isLoading ? t('signing_in') : t('sign_in')}
             </Button>
           </form>
 
           <div className="mt-6 pt-6 border-t">
             <p className="text-sm text-center text-gray-600">
-              Don't have an account?{' '}
+              {t('dont_have_account')}{' '}
               <a href="/register/jobseeker" className="text-purple-600 hover:underline">
-                Register as job seeker
+                {t('register_jobseeker')}
               </a>
             </p>
           </div>
@@ -146,9 +144,9 @@ export function JobSeekerLogin() {
                 <Briefcase className="size-5 text-blue-600" />
               </div>
               <div>
-                <h4 className="text-sm mb-1">Need Help?</h4>
+                <h4 className="text-sm mb-1">{t('need_help')}</h4>
                 <p className="text-xs text-gray-700">
-                  Contact our 24/7 support hotline
+                  {t('support_hotline')}
                 </p>
                 <p className="text-sm text-blue-600 mt-1">
                   +971-800-JOBS
@@ -159,7 +157,7 @@ export function JobSeekerLogin() {
 
           <div className="text-center">
             <p className="text-xs text-gray-600">
-              Available in multiple languages for your convenience
+              {t('available_languages')}
             </p>
           </div>
         </div>
