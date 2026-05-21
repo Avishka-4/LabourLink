@@ -26,7 +26,7 @@ const MainLayout = React.forwardRef<HTMLDivElement, MainLayoutProps>(
     ...props
   }, ref) => {
     const showHeader = header?.enabled !== false;
-    const showSidebar = sidebar?.enabled !== false && !showHeaderOnly;
+    const showSidebar = sidebar?.enabled === true && !showHeaderOnly;
     const showFooter = footer?.enabled !== false;
 
     const headerProps = header || {};

@@ -182,22 +182,22 @@ export function LandingPage() {
               <h4 className="mb-4 dark:text-white">{t('home_quick_links_title')}</h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_about_link')}</a>
+                  <a href="/info#about" className="hover:text-indigo-600 transition">{t('home_about_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_worker_rights_link')}</a>
+                  <a href="/info#worker-rights" className="hover:text-indigo-600 transition">{t('home_worker_rights_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_agency_registration_link')}</a>
+                  <a href="/info#agency-registration" className="hover:text-indigo-600 transition">{t('home_agency_registration_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_support_services_link')}</a>
+                  <a href="/info#support-services" className="hover:text-indigo-600 transition">{t('home_support_services_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_faqs_link')}</a>
+                  <a href="/info#faqs" className="hover:text-indigo-600 transition">{t('home_faqs_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_contact_support_link')}</a>
+                  <a href="/info#contact-support" className="hover:text-indigo-600 transition">{t('home_contact_support_link')}</a>
                 </li>
               </ul>
             </div>
@@ -207,22 +207,22 @@ export function LandingPage() {
               <h4 className="mb-4 dark:text-white">{t('home_legal_title')}</h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_privacy_link')}</a>
+                  <a href="/info#privacy-policy" className="hover:text-indigo-600 transition">{t('home_privacy_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_terms_link')}</a>
+                  <a href="/info#terms-of-service" className="hover:text-indigo-600 transition">{t('home_terms_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_data_protection_link')}</a>
+                  <a href="/info#data-protection" className="hover:text-indigo-600 transition">{t('home_data_protection_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_cookie_policy_link')}</a>
+                  <a href="/info#cookie-policy" className="hover:text-indigo-600 transition">{t('home_cookie_policy_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_accessibility_link')}</a>
+                  <a href="/info#accessibility" className="hover:text-indigo-600 transition">{t('home_accessibility_link')}</a>
                 </li>
                 <li>
-                  <a href="#" className="hover:text-indigo-600 transition">{t('home_disclaimer_link')}</a>
+                  <a href="/info#disclaimer" className="hover:text-indigo-600 transition">{t('home_disclaimer_link')}</a>
                 </li>
               </ul>
             </div>

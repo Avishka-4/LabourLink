@@ -26,7 +26,7 @@ export interface SidebarProps
 
 const Sidebar = React.forwardRef<HTMLAsideElement, SidebarProps>(
   ({
-    items,
+    items = [],
     logo,
     logoText,
     collapsible = true,

@@ -24,6 +24,7 @@ import PublicJobDetailPage from "@/pages/public/JobDetailPage";
 import PublicNewsPage from "@/pages/public/PublicNewsPage";
 import PublicResourcesPage from "@/pages/public/GovernmentResourcesPage";
 import PublicNotFoundPage from "@/pages/public/NotFoundPage";
+import InfoPage from "@/pages/public/InfoPage";
 import MyComplaintsPage from "@/pages/worker/MyComplaintsPage";
 import SubmitComplaintPage from "@/pages/worker/SubmitComplaintPage";
 import ComplaintDetailPage from "@/pages/worker/ComplaintDetailPage";
@@ -98,6 +99,10 @@ export const router = createBrowserRouter([
   {
     path: "/resources",
     element: <PublicResourcesPage />,
+  },
+  {
+    path: "/info",
+    element: <InfoPage />,
   },
   {
     path: "/login/agency",

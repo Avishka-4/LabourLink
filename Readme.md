@@ -55,6 +55,14 @@ The database schema is designed for data integrity and includes entities for use
 
 ---
 
+## 🔑 Demo Credentials
+
+For local development and demonstration, test accounts are provided in [`DEMO_CREDENTIALS.md`](DEMO_CREDENTIALS.md).
+
+> **Note:** `DEMO_CREDENTIALS.md` is for development only — delete it before deploying to production.
+
+---
+
 ## 🎓 Acknowledgments
 
 Special thanks to our internal supervisor, **Mr. Nishankar Sathiyamohan**, Lecturer at the Faculty of Computing, Sabaragamuwa University of Sri Lanka, for his guidance.

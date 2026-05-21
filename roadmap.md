@@ -117,6 +117,15 @@ Clean up mock data files
 Validate end to end flows
 mailtrap intergration to the website and use a carousal to the website 
 
+Status:
+Frontend: running at http://localhost:5173
+Backend: running at http://localhost:5007
+Build warnings remain (nullability), but they do not stop the API from running.
+Next steps if you want:
+
+Start MySQL (I didn’t find a Windows service named MySQL; if you use XAMPP/WAMP, start it there).
+Hit the API Swagger at http://localhost:5007/swagger in a browser to confirm endpoints.
+
 
 ### Phase C - Testing
 - Backend unit tests for services (extend coverage beyond auth).
