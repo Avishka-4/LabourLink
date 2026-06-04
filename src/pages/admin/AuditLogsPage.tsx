@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Card, EmptyState, LoadingSpinner } from '@/components';
 import { adminService } from '@/services/adminService';
 
 export default function AuditLogsPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState<Array<{ id: string; action: string; entityType: string }>>([]);
 
@@ -34,6 +36,7 @@ export default function AuditLogsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 space-y-6">
+      <button onClick={() => navigate(-1)} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
       <h1 className="text-2xl font-bold">Audit Logs</h1>
       {logs.length === 0 ? (
         <EmptyState title="No audit logs" description="Audit activity will appear here." />
