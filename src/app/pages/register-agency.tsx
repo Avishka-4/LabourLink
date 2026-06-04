@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Building2, Upload, Users, ArrowLeft, CheckCircle } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Building2, Upload, Users, ArrowLeft, CheckCircle, FileText, X, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -10,10 +10,32 @@ import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
 import { authService } from '@/services/authService';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5007/api';
+const ACCEPTED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp']);
+const MAX_SIZE_MB = 5;
+
+type AgencyDocKey = 'businessReg' | 'bankGuarantee';
+
+async function uploadDoc(token: string, key: string, file: File): Promise<void> {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('documentType', key);
+  const res = await fetch(`${API_BASE}/upload/document`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  if (!res.ok) throw new Error(`Failed to upload ${key}`);
+}
+
 export function AgencyRegistration() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [step, setStep] = useState(1);
+  const [docs, setDocs] = useState<Partial<Record<AgencyDocKey, File>>>({});
+  const businessRegRef = useRef<HTMLInputElement>(null);
+  const bankGuaranteeRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     agencyName: '',
     sltdaNumber: '',
@@ -33,6 +55,28 @@ export function AgencyRegistration() {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleFileChange = (key: AgencyDocKey, ref: React.RefObject<HTMLInputElement | null>, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = '.' + (file.name.split('.').pop() ?? '').toLowerCase();
+    if (!ACCEPTED_EXTENSIONS.has(ext)) {
+      toast.error(`${file.name}: only PDF, JPG, PNG or WEBP files are accepted`);
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`${file.name}: file must be smaller than ${MAX_SIZE_MB} MB`);
+      e.target.value = '';
+      return;
+    }
+    setDocs(prev => ({ ...prev, [key]: file }));
+  };
+
+  const removeDoc = (key: AgencyDocKey, ref: React.RefObject<HTMLInputElement | null>) => {
+    setDocs(prev => { const next = { ...prev }; delete next[key]; return next; });
+    if (ref.current) ref.current.value = '';
   };
 
   const handleSltdaVerification = async () => {
@@ -58,13 +102,29 @@ export function AgencyRegistration() {
       return;
     }
 
+    if (formData.password.length < 8 || !/[A-Z]/.test(formData.password) || !/[a-z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+      toast.error('Password must be at least 8 characters and include an uppercase letter, lowercase letter, and number');
+      return;
+    }
+
     if (!formData.acceptTerms) {
       toast.error('Please accept the terms and conditions');
       return;
     }
 
+    if (!docs.businessReg) {
+      toast.error('Business Registration Certificate is required');
+      return;
+    }
+
+    if (!docs.bankGuarantee) {
+      toast.error('Bank Guarantee document is required');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      setUploadStatus('Creating account…');
       await authService.register({
         email: formData.email,
         password: formData.password,
@@ -73,12 +133,24 @@ export function AgencyRegistration() {
         role: 'RecruitmentAgency',
         phoneNumber: formData.phone,
       });
+
+      setUploadStatus('Signing in…');
+      const session = await authService.login(formData.email, formData.password);
+
+      const entries = Object.entries(docs) as [AgencyDocKey, File][];
+      for (let i = 0; i < entries.length; i++) {
+        const [key, file] = entries[i];
+        setUploadStatus(`Uploading document ${i + 1}/${entries.length}…`);
+        await uploadDoc(session.token, key, file);
+      }
+
       toast.success('Registration submitted for admin approval!');
-      navigate('/login/agency');
+      navigate('/agency');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);
+      setUploadStatus('');
     }
   };
 
@@ -325,28 +397,45 @@ export function AgencyRegistration() {
                 </ul>
               </div>
 
-              <div className="space-y-4">
-                <div>
-                  <Label>Business Registration Certificate *</Label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-                    <Upload className="size-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload PDF or Image (max 5MB)</p>
-                    <Button type="button" variant="outline" size="sm">
-                      Choose File
-                    </Button>
-                  </div>
-                </div>
-
-                <div>
-                  <Label>Bank Guarantee (Original) *</Label>
-                  <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-                    <Upload className="size-8 mx-auto mb-2 text-gray-400" />
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload PDF or Image (max 5MB)</p>
-                    <Button type="button" variant="outline" size="sm">
-                      Choose File
-                    </Button>
-                  </div>
-                </div>
+              <div className="grid md:grid-cols-2 gap-4">
+                {([
+                  { key: 'businessReg' as AgencyDocKey, label: 'Business Registration Certificate', ref: businessRegRef },
+                  { key: 'bankGuarantee' as AgencyDocKey, label: 'Bank Guarantee (Original)', ref: bankGuaranteeRef },
+                ] as const).map(({ key, label, ref }) => {
+                  const file = docs[key];
+                  return (
+                    <div key={key}>
+                      <Label className="mb-1 block">{label} <span className="text-red-500">*</span></Label>
+                      <input
+                        ref={ref}
+                        type="file"
+                        accept=".pdf,.jpg,.jpeg,.png,.webp"
+                        className="hidden"
+                        onChange={(e) => handleFileChange(key, ref, e)}
+                      />
+                      {file ? (
+                        <div className="flex items-center gap-2 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+                          <CheckCircle className="size-4 text-green-600 flex-shrink-0" />
+                          <FileText className="size-4 text-gray-500 flex-shrink-0" />
+                          <span className="text-sm truncate flex-1 text-gray-700 dark:text-gray-300">{file.name}</span>
+                          <span className="text-xs text-gray-400 flex-shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                          <button type="button" onClick={() => removeDoc(key, ref)} className="text-gray-400 hover:text-red-500 transition" aria-label="Remove">
+                            <X className="size-4" />
+                          </button>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => ref.current?.click()}
+                          className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-emerald-400 rounded-lg p-4 text-center transition group"
+                        >
+                          <Upload className="size-5 mx-auto mb-1 text-gray-400 group-hover:text-emerald-500" />
+                          <p className="text-xs text-gray-500 dark:text-gray-400">PDF or image, max 5 MB</p>
+                        </button>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
 
               <hr className="dark:border-gray-700" />
@@ -405,6 +494,7 @@ export function AgencyRegistration() {
                     onChange={handleChange}
                     required
                   />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must include uppercase, lowercase, and a number</p>
                 </div>
 
                 <div>
@@ -443,7 +533,12 @@ export function AgencyRegistration() {
                   disabled={isLoading}
                   className="flex-1 bg-emerald-600 hover:bg-emerald-700"
                 >
-                  {isLoading ? 'Submitting...' : 'Submit Registration'}
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="size-4 animate-spin" />
+                      {uploadStatus || 'Submitting…'}
+                    </span>
+                  ) : 'Submit Registration'}
                 </Button>
               </div>
             </form>
