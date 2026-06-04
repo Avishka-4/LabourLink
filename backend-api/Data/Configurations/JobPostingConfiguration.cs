@@ -42,6 +42,11 @@ public class JobPostingConfiguration : IEntityTypeConfiguration<JobPosting>
             .HasColumnType("json")
             .Metadata.SetValueComparer(JsonListValueConverter.Comparer);
 
+        builder.Property(job => job.Benefits)
+            .HasConversion(JsonListValueConverter.Converter)
+            .HasColumnType("json")
+            .Metadata.SetValueComparer(JsonListValueConverter.Comparer);
+
         builder.Property(job => job.EducationRequired)
             .HasMaxLength(100);
 
