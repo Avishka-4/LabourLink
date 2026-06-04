@@ -19,15 +19,9 @@ public class RecruitmentAgencyConfiguration : IEntityTypeConfiguration<Recruitme
             .HasMaxLength(50)
             .IsRequired();
 
-        builder.HasIndex(agency => agency.CompanyRegistrationNumber)
-            .IsUnique();
-
         builder.Property(agency => agency.LicenseNumber)
             .HasMaxLength(100)
             .IsRequired();
-
-        builder.HasIndex(agency => agency.LicenseNumber)
-            .IsUnique();
 
         builder.Property(agency => agency.BusinessAddress)
             .HasMaxLength(500)
