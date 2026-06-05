@@ -39,6 +39,8 @@ public class JobPosting : IAuditableEntity
 
     public List<string> Requirements { get; set; } = new();
 
+    public List<string> Benefits { get; set; } = new();
+
     public int? RequiredExperience { get; set; }
 
     [MaxLength(100)]

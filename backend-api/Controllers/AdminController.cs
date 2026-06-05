@@ -102,7 +102,7 @@ public sealed class AdminController : ControllerBase
             {
                 Id = w.WorkerId,
                 Name = w.User == null ? "" : $"{w.User.FirstName} {w.User.LastName}".Trim(),
-                Email = w.User?.Email ?? string.Empty,
+                Email = w.User == null ? string.Empty : w.User.Email,
                 SubmittedAt = w.CreatedAt,
             })
             .ToListAsync(cancellationToken);
@@ -115,7 +115,7 @@ public sealed class AdminController : ControllerBase
             {
                 Id = a.AgencyId,
                 Name = a.CompanyName,
-                Email = a.User?.Email ?? string.Empty,
+                Email = a.User == null ? string.Empty : a.User.Email,
                 SubmittedAt = a.CreatedAt,
             })
             .ToListAsync(cancellationToken);
@@ -168,7 +168,7 @@ public sealed class AdminController : ControllerBase
             {
                 JobId = j.JobId,
                 Title = j.JobTitle,
-                AgencyName = j.Agency?.CompanyName ?? string.Empty,
+                AgencyName = j.Agency == null ? string.Empty : j.Agency.CompanyName,
                 SubmittedAt = j.CreatedAt,
             })
             .ToListAsync(cancellationToken);

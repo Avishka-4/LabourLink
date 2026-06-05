@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 import { Card, LoadingSpinner } from '@/components';
 import { adminService } from '@/services/adminService';
 
 export default function UserDetailPage() {
+  const navigate = useNavigate();
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<any>(null);
@@ -36,6 +37,7 @@ export default function UserDetailPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-10 space-y-6">
+      <button onClick={() => navigate(-1)} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
       <h1 className="text-2xl font-bold">User Detail</h1>
       <Card>
         <div className="space-y-2">

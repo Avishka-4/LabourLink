@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router';
 import { Button, Card, EmptyState, LoadingSpinner } from '@/components';
 import { adminService } from '@/services/adminService';
 import type { NewsResponse } from '@/types/api.types';
 
 export default function ManageNewsPage() {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | undefined>();
   const [news, setNews] = useState<NewsResponse[]>([]);
@@ -48,6 +50,7 @@ export default function ManageNewsPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-10 space-y-6">
+      <button onClick={() => navigate(-1)} className="mb-2 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition-colors">← Back</button>
       <h1 className="text-2xl font-bold">Manage News</h1>
       {error ? (
         <EmptyState title="Unable to load news" description={error} />
