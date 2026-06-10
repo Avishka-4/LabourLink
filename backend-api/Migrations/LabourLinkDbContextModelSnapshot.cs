@@ -759,6 +759,36 @@ namespace LabourLinkAPI.Migrations
                     b.ToTable("news", (string)null);
                 });
 
+            modelBuilder.Entity("LabourLinkAPI.Models.Entities.PasswordResetToken", b =>
+                {
+                    b.Property<Guid>("TokenId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTime>("ExpiryDate")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Token")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("TokenId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PasswordResetTokens");
+                });
+
             modelBuilder.Entity("LabourLinkAPI.Models.Entities.RecruitmentAgency", b =>
                 {
                     b.Property<Guid>("AgencyId")
@@ -878,6 +908,30 @@ namespace LabourLinkAPI.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("refresh_tokens", (string)null);
+                });
+
+            modelBuilder.Entity("LabourLinkAPI.Models.Entities.SavedJob", b =>
+                {
+                    b.Property<Guid>("SavedJobId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<Guid>("JobId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("JobSeekerId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("SavedJobId");
+
+                    b.HasIndex("JobId");
+
+                    b.HasIndex("JobSeekerId");
+
+                    b.ToTable("SavedJobs");
                 });
 
             modelBuilder.Entity("LabourLinkAPI.Models.Entities.User", b =>
@@ -1176,6 +1230,17 @@ namespace LabourLinkAPI.Migrations
                     b.Navigation("CreatedByAdmin");
                 });
 
+            modelBuilder.Entity("LabourLinkAPI.Models.Entities.PasswordResetToken", b =>
+                {
+                    b.HasOne("LabourLinkAPI.Models.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("LabourLinkAPI.Models.Entities.RecruitmentAgency", b =>
                 {
                     b.HasOne("LabourLinkAPI.Models.Entities.User", "User")
@@ -1203,6 +1268,25 @@ namespace LabourLinkAPI.Migrations
                         .IsRequired();
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("LabourLinkAPI.Models.Entities.SavedJob", b =>
+                {
+                    b.HasOne("LabourLinkAPI.Models.Entities.JobPosting", "Job")
+                        .WithMany()
+                        .HasForeignKey("JobId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("LabourLinkAPI.Models.Entities.JobSeeker", "JobSeeker")
+                        .WithMany()
+                        .HasForeignKey("JobSeekerId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Job");
+
+                    b.Navigation("JobSeeker");
                 });
 
             modelBuilder.Entity("LabourLinkAPI.Models.Entities.Worker", b =>
