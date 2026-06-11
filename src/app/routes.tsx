@@ -24,25 +24,24 @@ import PublicJobDetailPage from "@/pages/public/JobDetailPage";
 import PublicNewsPage from "@/pages/public/PublicNewsPage";
 import PublicResourcesPage from "@/pages/public/GovernmentResourcesPage";
 import PublicNotFoundPage from "@/pages/public/NotFoundPage";
+import InfoPage from "@/pages/public/InfoPage";
 import MyComplaintsPage from "@/pages/worker/MyComplaintsPage";
 import SubmitComplaintPage from "@/pages/worker/SubmitComplaintPage";
 import ComplaintDetailPage from "@/pages/worker/ComplaintDetailPage";
 import WorkerProfilePage from "@/pages/worker/WorkerProfilePage";
-import WorkerSettingsPage from "@/pages/worker/WorkerSettingsPage";
 import WorkerResourcesPage from "@/pages/worker/GovernmentResourcesPage";
 import JobSeekerBrowseJobsPage from "@/pages/jobseeker/BrowseJobsPage";
 import JobSeekerJobDetailPage from "@/pages/jobseeker/JobDetailPage";
 import MyApplicationsPage from "@/pages/jobseeker/MyApplicationsPage";
 import SavedJobsPage from "@/pages/jobseeker/SavedJobsPage";
 import JobSeekerProfilePage from "@/pages/jobseeker/JobSeekerProfilePage";
-import JobSeekerSettingsPage from "@/pages/jobseeker/JobSeekerSettingsPage";
 import ManageJobsPage from "@/pages/agency/ManageJobsPage";
 import PostJobPage from "@/pages/agency/PostJobPage";
 import EditJobPage from "@/pages/agency/EditJobPage";
 import JobApplicationsPage from "@/pages/agency/JobApplicationsPage";
 import AgencyProfilePage from "@/pages/agency/AgencyProfilePage";
 import AgencyReportsPage from "@/pages/agency/AgencyReportsPage";
-import AgencySettingsPage from "@/pages/agency/AgencySettingsPage";
+import AgencyComplaintsPage from "@/pages/agency/AgencyComplaintsPage";
 import ManageUsersPage from "@/pages/admin/ManageUsersPage";
 import UserDetailPage from "@/pages/admin/UserDetailPage";
 import PendingWorkersPage from "@/pages/admin/PendingWorkersPage";
@@ -98,6 +97,10 @@ export const router = createBrowserRouter([
   {
     path: "/resources",
     element: <PublicResourcesPage />,
+  },
+  {
+    path: "/info",
+    element: <InfoPage />,
   },
   {
     path: "/login/agency",
@@ -200,16 +203,6 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/worker/settings",
-    element: (
-      <ProtectedRoute requiredRole="Worker">
-        <MainLayout>
-          <WorkerSettingsPage />
-        </MainLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/worker/resources",
     element: (
       <ProtectedRoute requiredRole="Worker">
@@ -265,16 +258,6 @@ export const router = createBrowserRouter([
       <ProtectedRoute requiredRole="JobSeeker">
         <MainLayout>
           <JobSeekerProfilePage />
-        </MainLayout>
-      </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/jobseeker/settings",
-    element: (
-      <ProtectedRoute requiredRole="JobSeeker">
-        <MainLayout>
-          <JobSeekerSettingsPage />
         </MainLayout>
       </ProtectedRoute>
     ),
@@ -340,11 +323,11 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/agency/settings",
+    path: "/agency/complaints",
     element: (
       <ProtectedRoute requiredRole="RecruitmentAgency">
         <MainLayout>
-          <AgencySettingsPage />
+          <AgencyComplaintsPage />
         </MainLayout>
       </ProtectedRoute>
     ),
