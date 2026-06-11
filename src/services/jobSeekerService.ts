@@ -37,4 +37,6 @@ export const jobSeekerService = {
       body: JSON.stringify({ jobId }),
     }),
   getSavedJobs: async () => apiRequest<SavedJobResponse[]>('/jobseeker/saved-jobs'),
+  unsaveJob: async (jobId: string) =>
+    apiRequest(`/jobseeker/saved-jobs/${jobId}`, { method: 'DELETE' }),
 };
