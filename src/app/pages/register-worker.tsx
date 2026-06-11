@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Users, Upload, ArrowLeft } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Users, Upload, ArrowLeft, X, FileText, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
@@ -9,6 +9,39 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
 import { authService } from '@/services/authService';
+
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5007/api';
+
+async function uploadDoc(token: string, key: DocKey, file: File): Promise<void> {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('documentType', key);
+  const res = await fetch(`${API_BASE}/upload/document`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  if (!res.ok) throw new Error(`Failed to upload ${key}`);
+}
+
+const ACCEPTED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp']);
+const MAX_SIZE_MB = 5;
+
+type DocKey = 'passport' | 'nic' | 'workPermit' | 'contract';
+
+interface DocSlot {
+  key: DocKey;
+  label: string;
+  required: boolean;
+  hint: string;
+}
+
+const DOC_SLOTS: DocSlot[] = [
+  { key: 'passport',   label: 'Passport Bio-data Page',   required: true,  hint: 'Clear scan of the photo page (PDF or image, max 5 MB)' },
+  { key: 'nic',        label: 'NIC / National ID',         required: false, hint: 'Front and back as one file (optional)' },
+  { key: 'workPermit', label: 'Work Permit / Visa',        required: false, hint: 'Current valid permit or visa (optional)' },
+  { key: 'contract',   label: 'Employment Contract',       required: false, hint: 'Signed contract document (optional)' },
+];
 
 export function WorkerRegistration() {
   const navigate = useNavigate();
@@ -34,10 +67,43 @@ export function WorkerRegistration() {
     acceptTerms: false,
   });
 
+  const [docs, setDocs] = useState<Partial<Record<DocKey, File>>>({});
+  const fileRefs: Record<DocKey, React.RefObject<HTMLInputElement | null>> = {
+    passport:   useRef<HTMLInputElement>(null),
+    nic:        useRef<HTMLInputElement>(null),
+    workPermit: useRef<HTMLInputElement>(null),
+    contract:   useRef<HTMLInputElement>(null),
+  };
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const handleFileChange = (key: DocKey, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = '.' + (file.name.split('.').pop() ?? '').toLowerCase();
+    if (!ACCEPTED_EXTENSIONS.has(ext)) {
+      toast.error(`${file.name}: only PDF, JPG, PNG or WEBP files are accepted`);
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`${file.name}: file must be smaller than ${MAX_SIZE_MB} MB`);
+      e.target.value = '';
+      return;
+    }
+    setDocs(prev => ({ ...prev, [key]: file }));
+  };
+
+  const removeDoc = (key: DocKey) => {
+    setDocs(prev => { const next = { ...prev }; delete next[key]; return next; });
+    const ref = fileRefs[key];
+    if (ref.current) ref.current.value = '';
+  };
+
+  const [uploadStatus, setUploadStatus] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -47,13 +113,24 @@ export function WorkerRegistration() {
       return;
     }
 
+    if (formData.password.length < 8 || !/[A-Z]/.test(formData.password) || !/[a-z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+      toast.error('Password must be at least 8 characters and include an uppercase letter, lowercase letter, and number');
+      return;
+    }
+
     if (!formData.acceptTerms) {
       toast.error('Please accept the terms and conditions');
       return;
     }
 
+    if (!docs.passport) {
+      toast.error('Passport bio-data page is required');
+      return;
+    }
+
     setIsLoading(true);
     try {
+      setUploadStatus('Creating account…');
       await authService.register({
         email: formData.email,
         password: formData.password,
@@ -62,12 +139,24 @@ export function WorkerRegistration() {
         role: 'Worker',
         phoneNumber: formData.phoneNumber,
       });
-      toast.success('Registration successful! You can now login.');
-      navigate('/login/worker');
+
+      setUploadStatus('Signing in…');
+      const session = await authService.login(formData.email, formData.password);
+
+      const entries = Object.entries(docs) as [DocKey, File][];
+      for (let i = 0; i < entries.length; i++) {
+        const [key, file] = entries[i];
+        setUploadStatus(`Uploading ${key} (${i + 1}/${entries.length})…`);
+        await uploadDoc(session.token, key, file);
+      }
+
+      toast.success('Registration complete! Welcome to LabourLink.');
+      navigate('/worker');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);
+      setUploadStatus('');
     }
   };
 
@@ -264,15 +353,57 @@ export function WorkerRegistration() {
               </div>
             </div>
 
-            <div>
-              <Label>Employment Contract Document</Label>
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-                <Upload className="size-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload contract (optional, PDF or Image)</p>
-                <Button type="button" variant="outline" size="sm">
-                  Choose File
-                </Button>
-              </div>
+            <hr className="dark:border-gray-700" />
+
+            <h4 className="dark:text-white">Supporting Documents</h4>
+
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-3 text-sm text-blue-700 dark:text-blue-300">
+              Passport scan is required. Other documents help speed up verification. PDF, JPG, PNG — max 5 MB each.
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              {DOC_SLOTS.map(({ key, label, required, hint }) => {
+                const file = docs[key];
+                return (
+                  <div key={key}>
+                    <Label className="mb-1 block">
+                      {label} {required && <span className="text-red-500">*</span>}
+                    </Label>
+                    <input
+                      ref={fileRefs[key]}
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.webp"
+                      className="hidden"
+                      onChange={(e) => handleFileChange(key, e)}
+                    />
+                    {file ? (
+                      <div className="flex items-center gap-2 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+                        <CheckCircle className="size-4 text-green-600 flex-shrink-0" />
+                        <FileText className="size-4 text-gray-500 flex-shrink-0" />
+                        <span className="text-sm truncate flex-1 text-gray-700 dark:text-gray-300">{file.name}</span>
+                        <span className="text-xs text-gray-400 flex-shrink-0">{(file.size / 1024).toFixed(0)} KB</span>
+                        <button
+                          type="button"
+                          onClick={() => removeDoc(key)}
+                          className="text-gray-400 hover:text-red-500 transition flex-shrink-0"
+                          aria-label="Remove file"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => fileRefs[key].current?.click()}
+                        className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-amber-400 dark:hover:border-amber-500 rounded-lg p-4 text-center transition group"
+                      >
+                        <Upload className="size-5 mx-auto mb-1 text-gray-400 group-hover:text-amber-500" />
+                        <p className="text-xs text-gray-500 dark:text-gray-400">{hint}</p>
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             <hr className="dark:border-gray-700" />
@@ -362,6 +493,7 @@ export function WorkerRegistration() {
                   onChange={handleChange}
                   required
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must include uppercase, lowercase, and a number</p>
               </div>
 
               <div>
@@ -396,7 +528,12 @@ export function WorkerRegistration() {
               disabled={isLoading}
               className="w-full bg-amber-600 hover:bg-amber-700"
             >
-              {isLoading ? 'Creating Account...' : 'Create Worker Account'}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  {uploadStatus || 'Creating Account…'}
+                </span>
+              ) : 'Create Worker Account'}
             </Button>
           </form>
         </Card>
