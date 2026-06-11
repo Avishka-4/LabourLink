@@ -34,6 +34,7 @@ public class CreateComplaintRequest
     public string Title { get; set; } = default!;
     public string Description { get; set; } = default!;
     public string? AttachmentUrl { get; set; }
+    public string? TargetAgencyName { get; set; }
 }
 
 public class ComplaintResponse

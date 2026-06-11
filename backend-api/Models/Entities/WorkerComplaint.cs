@@ -40,6 +40,9 @@ public class WorkerComplaint : IAuditableEntity
     public DateTime? ReviewedAt { get; set; }
     public DateTime? ResolvedAt { get; set; }
 
+    [MaxLength(255)]
+    public string? TargetAgencyName { get; set; }
+
     public Worker? Worker { get; set; }
     public User? AssignedToAdmin { get; set; }
 }

@@ -31,7 +31,7 @@ export const workerService = {
     }),
   getComplaints: async () => apiRequest<ComplaintItem[]>('/worker/complaints'),
   getComplaint: async (complaintId: string) => apiRequest(`/worker/complaints/${complaintId}`),
-  submitComplaint: async (payload: { type: string; title: string; description: string; attachmentUrl?: string }) =>
+  submitComplaint: async (payload: { type: string; title: string; description: string; attachmentUrl?: string; targetAgencyName?: string }) =>
     apiRequest('/worker/complaints', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
