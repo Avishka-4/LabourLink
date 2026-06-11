@@ -95,13 +95,18 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   const { skipAuth, skipRefresh, headers, ...rest } = options;
   const accessToken = skipAuth ? null : getAccessToken();
 
-  const response = await fetch(buildUrl(path), {
-    ...rest,
-    headers: {
-      ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
-      ...headers,
-    },
-  });
+  let response: Response;
+  try {
+    response = await fetch(buildUrl(path), {
+      ...rest,
+      headers: {
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        ...headers,
+      },
+    });
+  } catch {
+    throw new Error('Cannot connect to the server. Please ensure the backend is running on port 5007.');
+  }
 
   if (response.status === 401 && !skipRefresh) {
     const newToken = await refreshAccessToken();
@@ -109,13 +114,18 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
       throw new Error('Session expired. Please log in again.');
     }
 
-    const retryResponse = await fetch(buildUrl(path), {
-      ...rest,
-      headers: {
-        Authorization: `Bearer ${newToken}`,
-        ...headers,
-      },
-    });
+    let retryResponse: Response;
+    try {
+      retryResponse = await fetch(buildUrl(path), {
+        ...rest,
+        headers: {
+          Authorization: `Bearer ${newToken}`,
+          ...headers,
+        },
+      });
+    } catch {
+      throw new Error('Cannot connect to the server. Please ensure the backend is running on port 5007.');
+    }
 
     if (!retryResponse.ok) {
       throw new Error('Request failed');
@@ -125,7 +135,20 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
   }
 
   if (!response.ok) {
-    throw new Error('Request failed');
+    const text = await response.text();
+    let message = `Request failed (${response.status})`;
+    try {
+      const json = JSON.parse(text) as { message?: string; title?: string; errors?: Record<string, string[]> };
+      if (json.errors) {
+        const allErrors = Object.values(json.errors).flat();
+        message = allErrors.length > 0 ? allErrors.join('. ') : (json.title ?? message);
+      } else {
+        message = json.message ?? json.title ?? message;
+      }
+    } catch {
+      if (text) message = text;
+    }
+    throw new Error(message);
   }
 
   return parseResponse<T>(response);
