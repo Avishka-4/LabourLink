@@ -1,0 +1,22 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: # allow manual trigger from GitHub UI
+
+jobs:
+  # Amplify is connected directly to this GitHub repo and auto-deploys on
+  # push to main. This job triggers that build via the Amplify webhook so
+  # you get a single deployment record visible in both GitHub Actions and
+  # the Amplify console.
+  trigger-amplify:
+    name: Trigger Amplify Build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Trigger Amplify deploy webhook
+        run: |
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            "${{ secrets.AMPLIFY_WEBHOOK_URL }}"
