@@ -34,6 +34,7 @@ public class CreateComplaintRequest
     public string Title { get; set; } = default!;
     public string Description { get; set; } = default!;
     public string? AttachmentUrl { get; set; }
+    public string? TargetAgencyName { get; set; }
 }
 
 public class ComplaintResponse
@@ -42,7 +43,10 @@ public class ComplaintResponse
     public string Type { get; set; } = default!;
     public string Title { get; set; } = default!;
     public string Status { get; set; } = default!;
+    public string? ResolutionNotes { get; set; }
+    public string? TargetAgencyName { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
 }
 
 public class ComplaintDetailResponse
@@ -53,9 +57,16 @@ public class ComplaintDetailResponse
     public string Description { get; set; } = default!;
     public string Status { get; set; } = default!;
     public string? AttachmentUrl { get; set; }
+    public string? ResolutionNotes { get; set; }
+    public int? WorkerRating { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
     public List<ComplaintUpdateHistory> History { get; set; } = [];
+}
+
+public class WorkerRespondComplaintRequest
+{
+    public string Action { get; set; } = default!;
 }
 
 public class ComplaintUpdateHistory
@@ -83,4 +94,10 @@ public class GovernmentLinkResponse
     public string Url { get; set; } = default!;
     public string Category { get; set; } = default!;
     public string Description { get; set; } = default!;
+}
+
+public class AgencyListItem
+{
+    public Guid AgencyId { get; set; }
+    public string CompanyName { get; set; } = default!;
 }

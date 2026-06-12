@@ -66,6 +66,24 @@ public class ComplaintListResponse
     public string? WorkerName { get; set; }
 }
 
+public class ComplaintDetailResponse
+{
+    public Guid ComplaintId { get; set; }
+    public string Type { get; set; } = default!;
+    public string Title { get; set; } = default!;
+    public string Description { get; set; } = default!;
+    public string Status { get; set; } = default!;
+    public string Priority { get; set; } = default!;
+    public string? WorkerName { get; set; }
+    public string? WorkerEmail { get; set; }
+    public string? TargetAgencyName { get; set; }
+    public string? AttachmentUrl { get; set; }
+    public string? ResolutionNotes { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? ReviewedAt { get; set; }
+    public DateTime? ResolvedAt { get; set; }
+}
+
 public class AssignComplaintRequest
 {
     public Guid AssignedToAdminId { get; set; }
