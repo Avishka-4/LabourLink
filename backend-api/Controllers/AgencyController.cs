@@ -98,8 +98,8 @@ public sealed class AgencyController : ControllerBase
                 AgencyId = Guid.NewGuid(),
                 UserId = user.UserId,
                 CompanyName = request.Name ?? "",
-                CompanyRegistrationNumber = request.CompanyRegistrationNumber ?? "",
-                LicenseNumber = request.LicenseNumber ?? "",
+                CompanyRegistrationNumber = string.IsNullOrWhiteSpace(request.CompanyRegistrationNumber) ? Guid.NewGuid().ToString() : request.CompanyRegistrationNumber,
+                LicenseNumber = string.IsNullOrWhiteSpace(request.LicenseNumber) ? Guid.NewGuid().ToString() : request.LicenseNumber,
                 BusinessAddress = request.BusinessAddress ?? request.Address ?? "",
                 TaxId = request.TaxId ?? "",
                 BankAccount = request.BankAccount ?? "",
@@ -155,11 +155,7 @@ public sealed class AgencyController : ControllerBase
         [FromBody] CreateJobRequest request,
         CancellationToken cancellationToken = default)
     {
-        var agency = await GetAgencyAsync(cancellationToken);
-        if (agency == null)
-        {
-            return BadRequest(new MessageResponse { Message = "Agency profile not found" });
-        }
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
 
         var job = new JobPosting
         {
@@ -177,6 +173,7 @@ public sealed class AgencyController : ControllerBase
             ApplicationDeadline = request.DeadlineDate.HasValue
                 ? DateOnly.FromDateTime(request.DeadlineDate.Value)
                 : null,
+            Benefits = request.Benefits ?? new List<string>(),
             Status = request.PublishNow ? JobStatus.Published : JobStatus.Draft,
             PostedAt = DateTime.UtcNow,
         };
@@ -202,11 +199,7 @@ public sealed class AgencyController : ControllerBase
         [FromBody] UpdateJobRequest request,
         CancellationToken cancellationToken = default)
     {
-        var agency = await GetAgencyAsync(cancellationToken);
-        if (agency == null)
-        {
-            return BadRequest(new MessageResponse { Message = "Agency profile not found" });
-        }
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
 
         var job = await _db.JobPostings
             .FirstOrDefaultAsync(j => j.JobId == jobId && j.AgencyId == agency.AgencyId, cancellationToken);
@@ -256,6 +249,11 @@ public sealed class AgencyController : ControllerBase
             job.ApplicationDeadline = DateOnly.FromDateTime(request.DeadlineDate.Value);
         }
 
+        if (request.Benefits != null)
+        {
+            job.Benefits = request.Benefits;
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
 
         return Ok(new JobPostingDetailResponse
@@ -271,6 +269,7 @@ public sealed class AgencyController : ControllerBase
             ApplicationCount = job.ApplyCount,
             ViewCount = job.ViewCount,
             PostedDate = job.PostedAt,
+            Benefits = job.Benefits,
         });
     }
 
@@ -278,11 +277,7 @@ public sealed class AgencyController : ControllerBase
     [ProducesResponseType(typeof(List<JobPostingResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<JobPostingResponse>>> GetJobs(CancellationToken cancellationToken = default)
     {
-        var agency = await GetAgencyAsync(cancellationToken);
-        if (agency == null)
-        {
-            return Ok(new List<JobPostingResponse>());
-        }
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
 
         var jobs = await _db.JobPostings
             .AsNoTracking()
@@ -306,11 +301,7 @@ public sealed class AgencyController : ControllerBase
     [ProducesResponseType(typeof(JobPostingDetailResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<JobPostingDetailResponse>> GetJob(Guid jobId, CancellationToken cancellationToken = default)
     {
-        var agency = await GetAgencyAsync(cancellationToken);
-        if (agency == null)
-        {
-            return NotFound();
-        }
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
 
         var job = await _db.JobPostings
             .AsNoTracking()
@@ -334,18 +325,35 @@ public sealed class AgencyController : ControllerBase
             ApplicationCount = job.ApplyCount,
             ViewCount = job.ViewCount,
             PostedDate = job.PostedAt,
+            Benefits = job.Benefits,
         });
+    }
+
+    [HttpDelete("jobs/{jobId:guid}")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MessageResponse>> DeleteJob(Guid jobId, CancellationToken cancellationToken = default)
+    {
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
+
+        var job = await _db.JobPostings
+            .FirstOrDefaultAsync(j => j.JobId == jobId && j.AgencyId == agency.AgencyId, cancellationToken);
+
+        if (job == null)
+        {
+            return NotFound();
+        }
+
+        _db.JobPostings.Remove(job);
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new MessageResponse { Message = "Job deleted" });
     }
 
     [HttpGet("jobs/{jobId:guid}/applications")]
     [ProducesResponseType(typeof(List<ApplicationWithApplicantResponse>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ApplicationWithApplicantResponse>>> GetApplications(Guid jobId, CancellationToken cancellationToken = default)
     {
-        var agency = await GetAgencyAsync(cancellationToken);
-        if (agency == null)
-        {
-            return Ok(new List<ApplicationWithApplicantResponse>());
-        }
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
 
         var applications = await _db.JobApplications
             .AsNoTracking()
@@ -383,11 +391,7 @@ public sealed class AgencyController : ControllerBase
         [FromBody] UpdateApplicationStatusRequest request,
         CancellationToken cancellationToken = default)
     {
-        var agency = await GetAgencyAsync(cancellationToken);
-        if (agency == null)
-        {
-            return BadRequest(new MessageResponse { Message = "Agency profile not found" });
-        }
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
 
         var application = await _db.JobApplications
             .Include(a => a.Job)
@@ -417,11 +421,7 @@ public sealed class AgencyController : ControllerBase
     [ProducesResponseType(typeof(AgencyStatisticsResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<AgencyStatisticsResponse>> GetStatistics(CancellationToken cancellationToken = default)
     {
-        var agency = await GetAgencyAsync(cancellationToken);
-        if (agency == null)
-        {
-            return Ok(new AgencyStatisticsResponse());
-        }
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
 
         var jobs = await _db.JobPostings
             .AsNoTracking()
@@ -442,10 +442,183 @@ public sealed class AgencyController : ControllerBase
         });
     }
 
-    private async Task<RecruitmentAgency?> GetAgencyAsync(CancellationToken cancellationToken)
+    [HttpGet("analytics")]
+    [ProducesResponseType(typeof(AgencyAnalyticsResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AgencyAnalyticsResponse>> GetAnalytics(CancellationToken cancellationToken = default)
+    {
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
+
+        var jobs = await _db.JobPostings
+            .AsNoTracking()
+            .Include(j => j.Applications)
+            .Where(j => j.AgencyId == agency.AgencyId)
+            .ToListAsync(cancellationToken);
+
+        var allApplications = jobs.SelectMany(j => j.Applications).ToList();
+
+        var topByApplications = jobs
+            .OrderByDescending(j => j.Applications.Count)
+            .Take(5)
+            .Select(j => new JobAnalyticsSummary
+            {
+                JobId = j.JobId,
+                Title = j.JobTitle,
+                Status = j.Status.ToString(),
+                ApplicationCount = j.Applications.Count,
+                ViewCount = j.ViewCount,
+                PostedDate = j.PostedAt,
+            }).ToList();
+
+        var topByViews = jobs
+            .OrderByDescending(j => j.ViewCount)
+            .Take(5)
+            .Select(j => new JobAnalyticsSummary
+            {
+                JobId = j.JobId,
+                Title = j.JobTitle,
+                Status = j.Status.ToString(),
+                ApplicationCount = j.Applications.Count,
+                ViewCount = j.ViewCount,
+                PostedDate = j.PostedAt,
+            }).ToList();
+
+        return Ok(new AgencyAnalyticsResponse
+        {
+            TotalJobs = jobs.Count,
+            PublishedJobs = jobs.Count(j => j.Status == JobStatus.Published),
+            DraftJobs = jobs.Count(j => j.Status == JobStatus.Draft),
+            ClosedJobs = jobs.Count(j => j.Status == JobStatus.Closed || j.Status == JobStatus.Expired),
+            TotalApplications = allApplications.Count,
+            PendingApplications = allApplications.Count(a =>
+                a.Status == ApplicationStatus.Pending || a.Status == ApplicationStatus.Shortlisted),
+            ReviewingApplications = allApplications.Count(a => a.Status == ApplicationStatus.UnderReview),
+            AcceptedApplications = allApplications.Count(a => a.Status == ApplicationStatus.Accepted),
+            RejectedApplications = allApplications.Count(a =>
+                a.Status == ApplicationStatus.Rejected || a.Status == ApplicationStatus.Withdrawn),
+            TotalViews = jobs.Sum(j => j.ViewCount),
+            TopJobsByApplications = topByApplications,
+            TopJobsByViews = topByViews,
+        });
+    }
+
+    [HttpGet("complaints")]
+    [ProducesResponseType(typeof(List<AgencyComplaintResponse>), StatusCodes.Status200OK)]
+    public async Task<ActionResult<List<AgencyComplaintResponse>>> GetComplaints(CancellationToken cancellationToken = default)
+    {
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
+
+        var complaints = await _db.WorkerComplaints
+            .AsNoTracking()
+            .Include(c => c.Worker)
+            .ThenInclude(w => w.User)
+            .Where(c => c.TargetAgencyName != null &&
+                        c.TargetAgencyName.Trim().ToLower() == agency.CompanyName.Trim().ToLower())
+            .OrderByDescending(c => c.CreatedAt)
+            .Select(c => new AgencyComplaintResponse
+            {
+                ComplaintId = c.ComplaintId,
+                Title = c.Title,
+                Type = c.ComplaintType.ToString(),
+                Status = c.Status.ToString(),
+                ResolutionNotes = c.ResolutionNotes,
+                WorkerRating = c.WorkerRating,
+                ResolvedAt = c.ResolvedAt,
+                CreatedAt = c.CreatedAt,
+                WorkerName = c.Worker != null && c.Worker.User != null
+                    ? $"{c.Worker.User.FirstName} {c.Worker.User.LastName}".Trim()
+                    : null,
+            })
+            .ToListAsync(cancellationToken);
+
+        return Ok(complaints);
+    }
+
+    [HttpGet("rating")]
+    [ProducesResponseType(typeof(AgencyRatingResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AgencyRatingResponse>> GetRating(CancellationToken cancellationToken = default)
+    {
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
+
+        var ratedComplaints = await _db.WorkerComplaints
+            .AsNoTracking()
+            .Where(c => c.TargetAgencyName != null && c.WorkerRating != null)
+            .ToListAsync(cancellationToken);
+
+        var agencyName = agency.CompanyName.Trim().ToLowerInvariant();
+        var filtered = ratedComplaints
+            .Where(c => c.TargetAgencyName!.Trim().ToLowerInvariant() == agencyName)
+            .ToList();
+
+        if (filtered.Count == 0)
+        {
+            return Ok(new AgencyRatingResponse
+            {
+                AverageRating = 0,
+                TotalRatings = 0,
+                FiveStarCount = 0,
+                OneStarCount = 0,
+            });
+        }
+
+        return Ok(new AgencyRatingResponse
+        {
+            AverageRating = Math.Round(filtered.Average(c => c.WorkerRating!.Value), 1),
+            TotalRatings = filtered.Count,
+            FiveStarCount = filtered.Count(c => c.WorkerRating == 5),
+            OneStarCount = filtered.Count(c => c.WorkerRating == 1),
+        });
+    }
+
+    [HttpPut("complaints/{complaintId:guid}/resolve")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MessageResponse>> ResolveComplaint(
+        Guid complaintId,
+        [FromBody] ResolveComplaintRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
+
+        var complaint = await _db.WorkerComplaints
+            .FirstOrDefaultAsync(c => c.ComplaintId == complaintId, cancellationToken);
+
+        if (complaint == null)
+        {
+            return NotFound();
+        }
+
+        complaint.Status = ComplaintStatus.Resolved;
+        complaint.ResolutionNotes = request.ResolutionDescription;
+        complaint.ResolvedAt = DateTime.UtcNow;
+        complaint.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new MessageResponse { Message = "Complaint marked as resolved" });
+    }
+
+    private async Task<RecruitmentAgency> GetOrCreateAgencyAsync(CancellationToken cancellationToken)
     {
         var userId = GetUserId();
-        return await _db.RecruitmentAgencies.FirstOrDefaultAsync(a => a.UserId == userId, cancellationToken);
+        var agency = await _db.RecruitmentAgencies.FirstOrDefaultAsync(a => a.UserId == userId, cancellationToken);
+        if (agency == null)
+        {
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+            agency = new RecruitmentAgency
+            {
+                AgencyId = Guid.NewGuid(),
+                UserId = userId,
+                CompanyName = user?.Email ?? "Agency",
+                CompanyRegistrationNumber = Guid.NewGuid().ToString(),
+                LicenseNumber = Guid.NewGuid().ToString(),
+                BusinessAddress = "",
+                TaxId = "",
+                BankAccount = "",
+                VerificationStatus = VerificationStatus.Pending,
+            };
+            _db.RecruitmentAgencies.Add(agency);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+        return agency;
     }
 
     private Guid GetUserId()
