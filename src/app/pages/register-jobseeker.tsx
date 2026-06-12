@@ -1,19 +1,37 @@
-import { useState } from 'react';
-import { Briefcase, Upload, ArrowLeft, Users } from 'lucide-react';
+import { useRef, useState } from 'react';
+import { Briefcase, Upload, ArrowLeft, Users, FileText, X, CheckCircle, Loader2 } from 'lucide-react';
 import { Button } from '../components/ui/button';
 import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Checkbox } from '../components/ui/checkbox';
-import { Textarea } from '../components/ui/textarea';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
 import { authService } from '@/services/authService';
 
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5007/api';
+const ACCEPTED_CV_EXTENSIONS = new Set(['.pdf', '.doc', '.docx']);
+const MAX_SIZE_MB = 5;
+
+async function uploadDoc(token: string, key: string, file: File): Promise<void> {
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('documentType', key);
+  const res = await fetch(`${API_BASE}/upload/document`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: fd,
+  });
+  if (!res.ok) throw new Error(`Failed to upload ${key}`);
+}
+
 export function JobSeekerRegistration() {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const cvRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     fullName: '',
     nationality: '',
@@ -25,14 +43,6 @@ export function JobSeekerRegistration() {
     email: '',
     currentCountry: '',
     currentCity: '',
-    preferredJobType: '',
-    preferredLocation: '',
-    experienceYears: '',
-    educationLevel: '',
-    skills: '',
-    languages: '',
-    expectedSalary: '',
-    availableFrom: '',
     password: '',
     confirmPassword: '',
     acceptTerms: false,
@@ -43,11 +53,33 @@ export function JobSeekerRegistration() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleCvChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const ext = '.' + (file.name.split('.').pop() ?? '').toLowerCase();
+    if (!ACCEPTED_CV_EXTENSIONS.has(ext)) {
+      toast.error(`${file.name}: only PDF, DOC or DOCX files are accepted for CV`);
+      e.target.value = '';
+      return;
+    }
+    if (file.size > MAX_SIZE_MB * 1024 * 1024) {
+      toast.error(`${file.name}: file must be smaller than ${MAX_SIZE_MB} MB`);
+      e.target.value = '';
+      return;
+    }
+    setCvFile(file);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (formData.password !== formData.confirmPassword) {
       toast.error('Passwords do not match');
+      return;
+    }
+
+    if (formData.password.length < 8 || !/[A-Z]/.test(formData.password) || !/[a-z]/.test(formData.password) || !/[0-9]/.test(formData.password)) {
+      toast.error('Password must be at least 8 characters and include an uppercase letter, lowercase letter, and number');
       return;
     }
 
@@ -58,6 +90,7 @@ export function JobSeekerRegistration() {
 
     setIsLoading(true);
     try {
+      setUploadStatus('Creating account…');
       await authService.register({
         email: formData.email,
         password: formData.password,
@@ -66,12 +99,22 @@ export function JobSeekerRegistration() {
         role: 'JobSeeker',
         phoneNumber: formData.phoneNumber,
       });
-      toast.success('Registration successful! You can now login and browse jobs.');
-      navigate('/login/jobseeker');
+
+      setUploadStatus('Signing in…');
+      const session = await authService.login(formData.email, formData.password);
+
+      if (cvFile) {
+        setUploadStatus('Uploading CV…');
+        await uploadDoc(session.token, 'cv', cvFile);
+      }
+
+      toast.success('Registration successful! You can now browse jobs.');
+      navigate('/jobseeker');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);
+      setUploadStatus('');
     }
   };
 
@@ -144,6 +187,7 @@ export function JobSeekerRegistration() {
                   required
                 >
                   <option value="">Select nationality</option>
+                  <option value="srilankan">Sri Lankan</option>
                   <option value="india">India</option>
                   <option value="bangladesh">Bangladesh</option>
                   <option value="pakistan">Pakistan</option>
@@ -241,158 +285,40 @@ export function JobSeekerRegistration() {
               </div>
             </div>
 
-            <hr className="dark:border-gray-700" />
-
-            <h4 className="dark:text-white">Job Preferences</h4>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="preferredJobType">Preferred Job Type *</Label>
-                <select
-                  id="preferredJobType"
-                  name="preferredJobType"
-                  value={formData.preferredJobType}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select job type</option>
-                  <option value="construction">Construction Worker</option>
-                  <option value="housekeeping">Housekeeping/Domestic</option>
-                  <option value="hospitality">Hospitality & Tourism</option>
-                  <option value="manufacturing">Manufacturing</option>
-                  <option value="agriculture">Agriculture</option>
-                  <option value="driver">Driver</option>
-                  <option value="security">Security</option>
-                  <option value="healthcare">Healthcare Support</option>
-                  <option value="retail">Retail/Sales</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <Label htmlFor="preferredLocation">Preferred Location in Sri Lanka *</Label>
-                <select
-                  id="preferredLocation"
-                  name="preferredLocation"
-                  value={formData.preferredLocation}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select location</option>
-                  <option value="colombo">Colombo</option>
-                  <option value="gampaha">Gampaha</option>
-                  <option value="kalutara">Kalutara</option>
-                  <option value="kandy">Kandy</option>
-                  <option value="galle">Galle</option>
-                  <option value="matara">Matara</option>
-                  <option value="anywhere">Anywhere in Sri Lanka</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="experienceYears">Years of Experience *</Label>
-                <select
-                  id="experienceYears"
-                  name="experienceYears"
-                  value={formData.experienceYears}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select experience</option>
-                  <option value="0">No experience</option>
-                  <option value="1">Less than 1 year</option>
-                  <option value="2">1-2 years</option>
-                  <option value="3">3-5 years</option>
-                  <option value="5">5+ years</option>
-                  <option value="10">10+ years</option>
-                </select>
-              </div>
-
-              <div>
-                <Label htmlFor="educationLevel">Education Level *</Label>
-                <select
-                  id="educationLevel"
-                  name="educationLevel"
-                  value={formData.educationLevel}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select education</option>
-                  <option value="primary">Primary School</option>
-                  <option value="secondary">Secondary School</option>
-                  <option value="high">High School</option>
-                  <option value="diploma">Diploma/Certificate</option>
-                  <option value="degree">Bachelor's Degree</option>
-                  <option value="masters">Master's Degree or Higher</option>
-                </select>
-              </div>
-            </div>
-
             <div>
-              <Label htmlFor="skills">Skills & Qualifications</Label>
-              <Textarea
-                id="skills"
-                name="skills"
-                placeholder="List your relevant skills, certifications, and qualifications (e.g., welding, cooking, driving license, etc.)"
-                value={formData.skills}
-                onChange={handleChange}
-                rows={3}
+              <Label className="mb-1 block">Resume / CV <span className="text-gray-400 text-xs">(optional — PDF, DOC, DOCX, max 5 MB)</span></Label>
+              <input
+                ref={cvRef}
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                onChange={handleCvChange}
               />
-            </div>
-
-            <div>
-              <Label htmlFor="languages">Languages Spoken *</Label>
-              <Input
-                id="languages"
-                name="languages"
-                placeholder="e.g., English, Sinhala, Tamil, Hindi"
-                value={formData.languages}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="expectedSalary">Expected Monthly Salary (LKR)</Label>
-                <Input
-                  id="expectedSalary"
-                  name="expectedSalary"
-                  type="number"
-                  placeholder="e.g., 50000"
-                  value={formData.expectedSalary}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="availableFrom">Available From *</Label>
-                <Input
-                  id="availableFrom"
-                  name="availableFrom"
-                  type="date"
-                  value={formData.availableFrom}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Resume/CV Upload (Optional)</Label>
-              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 text-center">
-                <Upload className="size-8 mx-auto mb-2 text-gray-400" />
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Upload your resume (PDF or Word, max 5MB)</p>
-                <Button type="button" variant="outline" size="sm">
-                  Choose File
-                </Button>
-              </div>
+              {cvFile ? (
+                <div className="flex items-center gap-2 border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 rounded-lg px-3 py-2">
+                  <CheckCircle className="size-4 text-green-600 flex-shrink-0" />
+                  <FileText className="size-4 text-gray-500 flex-shrink-0" />
+                  <span className="text-sm truncate flex-1 text-gray-700 dark:text-gray-300">{cvFile.name}</span>
+                  <span className="text-xs text-gray-400 flex-shrink-0">{(cvFile.size / 1024).toFixed(0)} KB</span>
+                  <button
+                    type="button"
+                    onClick={() => { setCvFile(null); if (cvRef.current) cvRef.current.value = ''; }}
+                    className="text-gray-400 hover:text-red-500 transition"
+                    aria-label="Remove CV"
+                  >
+                    <X className="size-4" />
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => cvRef.current?.click()}
+                  className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-purple-400 rounded-lg p-4 text-center transition group"
+                >
+                  <Upload className="size-5 mx-auto mb-1 text-gray-400 group-hover:text-purple-500" />
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Click to upload your resume</p>
+                </button>
+              )}
             </div>
 
             <hr className="dark:border-gray-700" />
@@ -443,6 +369,7 @@ export function JobSeekerRegistration() {
                   onChange={handleChange}
                   required
                 />
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Must include uppercase, lowercase, and a number</p>
               </div>
 
               <div>
@@ -477,7 +404,12 @@ export function JobSeekerRegistration() {
               disabled={isLoading}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
-              {isLoading ? 'Creating Account...' : 'Create Job Seeker Account'}
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="size-4 animate-spin" />
+                  {uploadStatus || 'Creating Account…'}
+                </span>
+              ) : 'Create Job Seeker Account'}
             </Button>
           </form>
         </Card>

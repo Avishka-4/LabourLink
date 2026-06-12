@@ -10,6 +10,20 @@ const announcements = [
     title: 'Sri Lanka Bureau of Foreign Employment',
     link: 'https://www.slbfe.lk/',
   },
+
+  {
+    id: 2,
+    image: '/images/Vigamanika.jpg',
+    title: 'Migrant Workers Pension Scheme',
+    link: 'https://ssb.gov.lk/vigamanika.html',
+  },
+
+  {
+    id: 3,
+    image: '/images/dfcc.png',
+    title: 'DFCC Ethera Saviya',
+    link: 'https://www.dfcc.lk/personal/personal-loans/ethera-saviya',
+  },
 ];
 
 export function AdCarousel() {
@@ -38,7 +52,7 @@ export function AdCarousel() {
           <div
             key={announcement.id}
             className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
-              index === currentIndex ? 'opacity-100' : 'opacity-0'
+              index === currentIndex ? 'opacity-100 z-10' : 'opacity-0 pointer-events-none'
             }`}
           >
             <a
@@ -64,7 +78,7 @@ export function AdCarousel() {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-900 shadow-md ring-1 ring-black/10 transition-colors duration-300"
+          className="absolute left-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-slate-900 shadow-md ring-1 ring-black/10 transition-colors duration-300"
           onClick={goToPrevious}
         >
           <ChevronLeft className="size-6" />
@@ -72,14 +86,14 @@ export function AdCarousel() {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-slate-900 shadow-md ring-1 ring-black/10 transition-colors duration-300"
+          className="absolute right-4 top-1/2 -translate-y-1/2 z-20 bg-white/80 hover:bg-white text-slate-900 shadow-md ring-1 ring-black/10 transition-colors duration-300"
           onClick={goToNext}
         >
           <ChevronRight className="size-6" />
         </Button>
 
         {/* Dots Indicator */}
-        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20 flex gap-2">
           {announcements.map((_, index) => (
             <button
               key={index}
