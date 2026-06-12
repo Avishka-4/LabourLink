@@ -3,6 +3,7 @@ using System;
 using LabourLinkAPI.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -10,9 +11,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace LabourLinkAPI.Migrations
 {
     [DbContext(typeof(LabourLinkDbContext))]
-    partial class LabourLinkDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260524180729_AddJobPostingBenefitsColumn")]
+    partial class AddJobPostingBenefitsColumn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1128,10 +1131,6 @@ namespace LabourLinkAPI.Migrations
 
                     b.Property<DateTime>("SubmittedAt")
                         .HasColumnType("datetime(6)");
-
-                    b.Property<string>("TargetAgencyName")
-                        .HasMaxLength(255)
-                        .HasColumnType("varchar(255)");
 
                     b.Property<string>("Title")
                         .IsRequired()
