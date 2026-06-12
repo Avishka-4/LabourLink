@@ -1,5 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
+using System.Threading.Tasks;
 using FluentAssertions;
 using LabourLinkAPI.Contracts.Auth;
 using LabourLinkAPI.Data;
@@ -8,6 +9,7 @@ using LabourLinkAPI.Models.Enums;
 using LabourLinkAPI.Services.Auth;
 using LabourLinkAPI.Tests.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
+using Xunit;
 
 namespace LabourLinkAPI.Tests.Controllers;
 

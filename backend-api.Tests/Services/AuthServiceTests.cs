@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using FluentAssertions;
 using LabourLinkAPI.Contracts.Auth;
 using LabourLinkAPI.Data;
@@ -5,6 +6,7 @@ using LabourLinkAPI.Models.Enums;
 using LabourLinkAPI.Services.Auth;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Xunit;
 
 namespace LabourLinkAPI.Tests.Services;
 
