@@ -56,6 +56,6 @@ public class AssignComplaintRequestValidator : AbstractValidator<AssignComplaint
     public AssignComplaintRequestValidator()
     {
         RuleFor(x => x.AssignedToAdminId)
-            .GreaterThan(0).WithMessage("Admin ID must be valid");
+            .NotEmpty().WithMessage("Admin ID must be valid");
     }
 }
