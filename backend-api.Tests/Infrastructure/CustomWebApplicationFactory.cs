@@ -1,3 +1,4 @@
+using System;
 using LabourLinkAPI.Data;
 using LabourLinkAPI.Services.Auth;
 using Microsoft.AspNetCore.Hosting;
@@ -19,13 +20,14 @@ public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
             services.AddDbContext<LabourLinkDbContext>(options =>
                 options.UseInMemoryDatabase($"labourlink-test-{Guid.NewGuid()}"));
 
-            services.PostConfigure<JwtOptions>(options =>
+            services.RemoveAll(typeof(IOptions<JwtOptions>));
+            services.AddSingleton(Options.Create(new JwtOptions
             {
-                options.Issuer = "LabourLink";
-                options.Audience = "LabourLink";
-                options.Key = "TestKey_ChangeMe_AtLeast32Characters";
-                options.ExpiryMinutes = 60;
-            });
+                Issuer = "LabourLink",
+                Audience = "LabourLink",
+                Key = "TestKey_ChangeMe_AtLeast32Characters",
+                ExpiryMinutes = 60,
+            }));
         });
     }
 }
