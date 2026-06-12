@@ -50,6 +50,7 @@ public class JobApplicationConfiguration : IEntityTypeConfiguration<JobApplicati
         builder.HasOne(application => application.JobSeeker)
             .WithMany(seeker => seeker.Applications)
             .HasForeignKey(application => application.JobSeekerId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .IsRequired(false)
+            .OnDelete(DeleteBehavior.ClientSetNull);
     }
 }
