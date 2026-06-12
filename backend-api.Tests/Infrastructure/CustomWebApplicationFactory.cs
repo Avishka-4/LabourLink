@@ -12,13 +12,15 @@ namespace LabourLinkAPI.Tests.Infrastructure;
 
 public sealed class CustomWebApplicationFactory : WebApplicationFactory<Program>
 {
+    private readonly string _dbName = $"labourlink-test-{Guid.NewGuid()}";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         builder.ConfigureServices(services =>
         {
             services.RemoveAll(typeof(DbContextOptions<LabourLinkDbContext>));
             services.AddDbContext<LabourLinkDbContext>(options =>
-                options.UseInMemoryDatabase($"labourlink-test-{Guid.NewGuid()}"));
+                options.UseInMemoryDatabase(_dbName));
 
             services.RemoveAll(typeof(IOptions<JwtOptions>));
             services.AddSingleton(Options.Create(new JwtOptions
