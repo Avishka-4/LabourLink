@@ -1,234 +1,299 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  ArrowLeft, Phone, Globe, BookOpen, Shield,
-  Heart, Gavel, AlertTriangle, Building2, ExternalLink,
-  Mail, HelpCircle, FileText,
+  AlertTriangle, Plus, ArrowLeft, Clock, CheckCircle,
+  ChevronRight, FileText, Calendar, Shield, Bell, RotateCcw,
 } from 'lucide-react';
+import { workerService } from '@/services/workerService';
+import type { ComplaintItem } from '@/services/workerService';
 
-type Resource = {
-  icon: typeof Phone;
-  color: string;
-  title: string;
-  subtitle: string;
-  items: { label: string; value: string; link?: string; type?: 'phone' | 'email' | 'url' }[];
+const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
+  submitted:   { label: 'Submitted',    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',            icon: FileText },
+  underreview: { label: 'Under Review', color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',        icon: Clock },
+  inprogress:  { label: 'In Progress',  color: 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300',        icon: Clock },
+  resolved:    { label: 'Resolved',     color: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300', icon: CheckCircle },
+  closed:      { label: 'Closed',       color: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400',               icon: Shield },
 };
 
-const RESOURCES: Resource[] = [
-  {
-    icon: Phone,
-    color: 'red',
-    title: 'Emergency Helplines',
-    subtitle: 'Available 24 hours, 7 days a week',
-    items: [
-      { label: 'LabourLink Support', value: '+94 742 330 023', type: 'phone' },
-      { label: 'SLBFE Hotline', value: '+94 112 864 100', type: 'phone' },
-      { label: 'Sri Lanka Police Emergency', value: '119', type: 'phone' },
-      { label: 'Support Email', value: 'support@labourlink.gov.lk', type: 'email' },
-    ],
-  },
-  {
-    icon: Building2,
-    color: 'blue',
-    title: 'SLBFE — Sri Lanka Bureau of Foreign Employment',
-    subtitle: 'Official government body for overseas workers',
-    items: [
-      { label: 'Main Hotline', value: '+94 112 864 100', type: 'phone' },
-      { label: 'Welfare Division', value: '+94 112 864 141', type: 'phone' },
-      { label: 'Website', value: 'www.slbfe.lk', link: 'https://www.slbfe.lk', type: 'url' },
-      { label: 'Address', value: '234, Denzil Kobbekaduwa Mawatha, Koswatta, Battaramulla' },
-    ],
-  },
-  {
-    icon: Globe,
-    color: 'indigo',
-    title: 'Sri Lankan Embassies & Missions',
-    subtitle: 'Contact your nearest embassy for urgent assistance',
-    items: [
-      { label: 'UAE (Dubai)', value: '+971 4 398 6535', type: 'phone' },
-      { label: 'Saudi Arabia (Riyadh)', value: '+966 11 488 4800', type: 'phone' },
-      { label: 'Malaysia (KL)', value: '+60 3 2148 8007', type: 'phone' },
-      { label: 'Qatar (Doha)', value: '+974 4467 8800', type: 'phone' },
-      { label: 'Kuwait City', value: '+965 2256 5571', type: 'phone' },
-      { label: 'Oman (Muscat)', value: '+968 2469 5720', type: 'phone' },
-    ],
-  },
-  {
-    icon: Gavel,
-    color: 'amber',
-    title: 'Legal Aid & Workers\' Rights',
-    subtitle: 'Know your rights and get legal support',
-    items: [
-      { label: 'Legal Aid Commission (Sri Lanka)', value: '+94 112 433 618', type: 'phone' },
-      { label: 'Labour Department', value: '+94 112 368 023', type: 'phone' },
-      { label: 'Workers\' Rights Hotline', value: '+94 112 864 100', type: 'phone' },
-      { label: 'Legal Resources', value: 'labordept.gov.lk', link: 'http://www.labordept.gov.lk', type: 'url' },
-    ],
-  },
-  {
-    icon: Heart,
-    color: 'pink',
-    title: 'Health & Safety',
-    subtitle: 'Medical support and health resources',
-    items: [
-      { label: 'Ministry of Health (Sri Lanka)', value: '+94 112 694 033', type: 'phone' },
-      { label: 'SLBFE Welfare Fund Hotline', value: '+94 112 864 141', type: 'phone' },
-      { label: 'Health Emergency (Sri Lanka)', value: '1990', type: 'phone' },
-      { label: 'WHO Sri Lanka', value: 'www.who.int/srilanka', link: 'https://www.who.int/srilanka', type: 'url' },
-    ],
-  },
-  {
-    icon: Shield,
-    color: 'teal',
-    title: 'Anti-Trafficking & Protection',
-    subtitle: 'Report abuse, trafficking, or exploitation',
-    items: [
-      { label: 'National Child Protection Authority', value: '+94 112 778 911', type: 'phone' },
-      { label: 'Sri Lanka Police — Anti-Human Trafficking', value: '+94 112 326 727', type: 'phone' },
-      { label: 'SLBFE Complaint Line', value: '+94 112 864 120', type: 'phone' },
-      { label: 'IOM Sri Lanka', value: 'iom.int', link: 'https://www.iom.int', type: 'url' },
-    ],
-  },
-];
-
-const COLOR_MAP: Record<string, { bg: string; icon: string; border: string; badge: string }> = {
-  red:    { bg: 'bg-red-50 dark:bg-red-900/10',     icon: 'text-red-600 dark:text-red-400',     border: 'border-red-200 dark:border-red-800',     badge: 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400' },
-  blue:   { bg: 'bg-blue-50 dark:bg-blue-900/10',   icon: 'text-blue-600 dark:text-blue-400',   border: 'border-blue-200 dark:border-blue-800',   badge: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' },
-  indigo: { bg: 'bg-indigo-50 dark:bg-indigo-900/10', icon: 'text-indigo-600 dark:text-indigo-400', border: 'border-indigo-200 dark:border-indigo-800', badge: 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400' },
-  amber:  { bg: 'bg-amber-50 dark:bg-amber-900/10', icon: 'text-amber-600 dark:text-amber-400', border: 'border-amber-200 dark:border-amber-800', badge: 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400' },
-  pink:   { bg: 'bg-pink-50 dark:bg-pink-900/10',   icon: 'text-pink-600 dark:text-pink-400',   border: 'border-pink-200 dark:border-pink-800',   badge: 'bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-400' },
-  teal:   { bg: 'bg-teal-50 dark:bg-teal-900/10',   icon: 'text-teal-600 dark:text-teal-400',   border: 'border-teal-200 dark:border-teal-800',   badge: 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400' },
-};
-
-function ItemIcon({ type }: { type?: string }) {
-  if (type === 'phone') return <Phone className="size-3 flex-shrink-0 text-gray-400" />;
-  if (type === 'email') return <Mail className="size-3 flex-shrink-0 text-gray-400" />;
-  if (type === 'url')   return <ExternalLink className="size-3 flex-shrink-0 text-gray-400" />;
-  return <HelpCircle className="size-3 flex-shrink-0 text-gray-400" />;
+function getStatus(s: string) {
+  const key = s.toLowerCase().replace(/[^a-z]/g, '');
+  return STATUS_MAP[key] ?? { label: s, color: 'bg-amber-100 text-amber-700', icon: Clock };
 }
 
-export default function GovernmentResourcesPage() {
+function isAwaitingResponse(item: ComplaintItem) {
+  const s = item.status.toLowerCase().replace(/[^a-z]/g, '');
+  return s === 'resolved' && !!item.resolutionNotes;
+}
+
+type TabFilter = 'all' | 'active' | 'resolved';
+
+export default function MyComplaintsPage() {
   const navigate = useNavigate();
+  const [loading, setLoading] = useState(true);
+  const [complaints, setComplaints] = useState<ComplaintItem[]>([]);
+  const [tab, setTab] = useState<TabFilter>('all');
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    document.title = 'Worker Resources — LabourLink';
+    document.title = 'My Complaints — LabourLink';
+    workerService.getComplaints()
+      .then(items => setComplaints(Array.isArray(items) ? items : []))
+      .catch(() => setError('Failed to load complaints.'))
+      .finally(() => setLoading(false));
   }, []);
+
+  const awaitingResponse = complaints.filter(isAwaitingResponse);
+
+  const filtered = complaints.filter(c => {
+    const s = c.status.toLowerCase().replace(/[^a-z]/g, '');
+    if (tab === 'all') return true;
+    if (tab === 'active') return !['resolved', 'closed'].includes(s);
+    if (tab === 'resolved') return ['resolved', 'closed'].includes(s);
+    return true;
+  });
+
+  const counts = {
+    all: complaints.length,
+    active: complaints.filter(c => !['resolved', 'closed'].includes(c.status.toLowerCase().replace(/[^a-z]/g, ''))).length,
+    resolved: complaints.filter(c => ['resolved', 'closed'].includes(c.status.toLowerCase().replace(/[^a-z]/g, ''))).length,
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="bg-gradient-to-r from-amber-600 to-orange-500 px-4 sm:px-6 py-8">
+          <div className="mx-auto max-w-4xl animate-pulse space-y-3">
+            <div className="h-4 bg-white/20 rounded w-24" />
+            <div className="h-8 bg-white/20 rounded w-48" />
+          </div>
+        </div>
+        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700 animate-pulse">
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4 mb-2" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Gradient Header */}
-      <div className="bg-gradient-to-r from-amber-500 to-orange-400 px-4 sm:px-6 py-8">
-        <div className="mx-auto max-w-5xl">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-amber-600 to-orange-500 px-4 sm:px-6 py-6">
+        <div className="mx-auto max-w-4xl">
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 text-amber-100 hover:text-white text-sm mb-6 transition"
+            className="flex items-center gap-2 text-amber-100 hover:text-white text-sm mb-4 transition"
           >
             <ArrowLeft className="size-4" /> Back
           </button>
-          <div className="flex items-start gap-4">
-            <div className="bg-white/20 p-3 rounded-2xl">
-              <BookOpen className="size-7 text-white" />
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="flex items-center gap-3">
+              <div className="bg-white/20 p-2.5 rounded-xl">
+                <AlertTriangle className="size-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold text-white">My Complaints</h1>
+                <p className="text-amber-100 text-sm">
+                  {complaints.length} total submission{complaints.length !== 1 ? 's' : ''}
+                  {awaitingResponse.length > 0 && (
+                    <span className="ml-2 bg-white text-amber-700 text-xs font-bold px-2 py-0.5 rounded-full animate-pulse">
+                      {awaitingResponse.length} need{awaitingResponse.length === 1 ? 's' : ''} your response
+                    </span>
+                  )}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white">Worker Resources</h1>
-              <p className="text-amber-100 text-sm mt-1 max-w-xl">
-                Official contacts, legal aid, and support services for Sri Lankan overseas workers. Keep these handy.
-              </p>
-            </div>
+            <button
+              onClick={() => navigate('/worker/complaints/new')}
+              className="flex items-center gap-2 bg-white text-amber-700 hover:bg-amber-50 font-semibold text-sm px-4 py-2.5 rounded-xl transition"
+            >
+              <Plus className="size-4" /> New Complaint
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div className="flex flex-wrap gap-2 mt-5">
+            {(['all', 'active', 'resolved'] as TabFilter[]).map(t => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-3.5 py-1.5 rounded-full text-sm font-medium transition ${
+                  tab === t
+                    ? 'bg-white text-amber-700 shadow'
+                    : 'bg-white/20 text-white hover:bg-white/30'
+                }`}
+              >
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+                <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${tab === t ? 'bg-amber-100 text-amber-700' : 'bg-white/20 text-white'}`}>
+                  {counts[t]}
+                </span>
+              </button>
+            ))}
           </div>
         </div>
       </div>
 
-      {/* Rights Banner */}
-      <div className="mx-auto max-w-5xl px-4 sm:px-6 py-6">
-        <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-2xl p-5 flex items-start gap-4 mb-6">
-          <div className="bg-amber-100 dark:bg-amber-900/30 p-2 rounded-xl flex-shrink-0">
-            <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-6 space-y-5">
+        {error && (
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4 text-sm text-red-700 dark:text-red-400">
+            {error}
           </div>
-          <div>
-            <p className="font-semibold text-amber-900 dark:text-amber-200 text-sm mb-1">Your Rights as an Overseas Worker</p>
-            <p className="text-amber-700 dark:text-amber-400 text-xs leading-relaxed">
-              You are entitled to: receive wages on time, work reasonable hours, safe working conditions, and keep your own passport.
-              Your employer cannot confiscate your passport, withhold pay, or force you to work without rest. If these rights are violated, contact the SLBFE or your nearest embassy immediately.
-            </p>
-          </div>
-        </div>
+        )}
 
-        {/* Quick Actions */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-          {[
-            { label: 'Submit a Complaint', icon: FileText, href: '/worker/complaints/new', color: 'bg-amber-600 text-white hover:bg-amber-700' },
-            { label: 'My Complaints', icon: AlertTriangle, href: '/worker/complaints', color: 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700' },
-            { label: 'My Profile', icon: Shield, href: '/worker/profile', color: 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700' },
-            { label: 'Dashboard', icon: BookOpen, href: '/worker', color: 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 hover:bg-amber-50 dark:hover:bg-gray-700 border border-gray-200 dark:border-gray-700' },
-          ].map(({ label, icon: Icon, href, color }) => (
-            <button
-              key={href}
-              onClick={() => navigate(href)}
-              className={`${color} rounded-xl px-4 py-3 text-xs font-semibold flex items-center gap-2 transition shadow-sm`}
-            >
-              <Icon className="size-3.5 flex-shrink-0" />
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
-        {/* Resource Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {RESOURCES.map(({ icon: Icon, color, title, subtitle, items }) => {
-            const c = COLOR_MAP[color];
-            return (
-              <div
-                key={title}
-                className={`${c.bg} border ${c.border} rounded-2xl overflow-hidden`}
-              >
-                <div className="px-5 py-4 border-b border-current border-opacity-10 flex items-center gap-3">
-                  <div className={`${c.badge} p-2 rounded-xl`}>
-                    <Icon className="size-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <h2 className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">{title}</h2>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</p>
-                  </div>
-                </div>
-                <div className="px-5 py-4 space-y-3">
-                  {items.map(item => (
-                    <div key={item.label} className="flex items-start justify-between gap-3">
-                      <span className="text-xs text-gray-500 dark:text-gray-400 min-w-0 leading-relaxed">{item.label}</span>
-                      <div className="flex items-center gap-1.5 flex-shrink-0">
-                        <ItemIcon type={item.type} />
-                        {item.link ? (
-                          <a
-                            href={item.link}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={`text-xs font-medium ${c.icon} hover:underline`}
-                          >
-                            {item.value}
-                          </a>
-                        ) : item.type === 'phone' ? (
-                          <a href={`tel:${item.value.replace(/\s/g, '')}`} className={`text-xs font-medium ${c.icon}`}>
-                            {item.value}
-                          </a>
-                        ) : item.type === 'email' ? (
-                          <a href={`mailto:${item.value}`} className={`text-xs font-medium ${c.icon} hover:underline`}>
-                            {item.value}
-                          </a>
-                        ) : (
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300">{item.value}</span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+        {/* ───── ACTION REQUIRED BANNER ───── */}
+        {awaitingResponse.length > 0 && (
+          <div className="bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl p-5 text-white shadow-lg">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="size-9 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 animate-bounce">
+                <Bell className="size-5 text-white" />
               </div>
-            );
-          })}
-        </div>
+              <div>
+                <h3 className="font-bold text-sm">
+                  {awaitingResponse.length === 1
+                    ? '1 complaint needs your response!'
+                    : `${awaitingResponse.length} complaints need your response!`}
+                </h3>
+                <p className="text-emerald-100 text-xs">The agency has resolved your complaint — tell them if you're satisfied or want to reopen</p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {awaitingResponse.map(item => (
+                <button
+                  key={item.complaintId}
+                  onClick={() => navigate(`/worker/complaints/${item.complaintId}`)}
+                  className="w-full flex items-center justify-between gap-3 bg-white/15 hover:bg-white/25 rounded-xl px-4 py-3 transition text-left group"
+                >
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-white truncate">{item.title}</p>
+                    {item.targetAgencyName && (
+                      <p className="text-xs text-emerald-100 truncate">Agency: {item.targetAgencyName}</p>
+                    )}
+                    <p className="text-xs text-emerald-200 mt-0.5 line-clamp-1 italic">
+                      "{item.resolutionNotes}"
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <span className="text-xs bg-white text-emerald-700 font-bold px-2.5 py-1 rounded-full whitespace-nowrap">
+                      Tap to Respond
+                    </span>
+                    <ChevronRight className="size-4 text-white group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
-        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
-          LabourLink is a service of the Sri Lanka Bureau of Foreign Employment · All contacts verified as of May 2026
-        </p>
+        {filtered.length === 0 ? (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-16 text-center">
+            <AlertTriangle className="size-12 mx-auto mb-3 text-gray-300" />
+            <p className="font-semibold text-gray-700 dark:text-gray-300 text-lg">
+              {tab === 'all' ? 'No complaints submitted yet' : `No ${tab} complaints`}
+            </p>
+            <p className="text-sm text-gray-400 mt-1">
+              {tab === 'all' ? 'Use the button above to file a complaint.' : `Switch to "All" to see all complaints.`}
+            </p>
+            {tab === 'all' && (
+              <button
+                onClick={() => navigate('/worker/complaints/new')}
+                className="mt-4 text-sm bg-amber-600 text-white px-4 py-2 rounded-lg hover:bg-amber-700 transition"
+              >
+                Submit Complaint
+              </button>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filtered
+              .sort((a, b) => {
+                // Sort: awaiting response first, then by date
+                const aWaiting = isAwaitingResponse(a) ? 1 : 0;
+                const bWaiting = isAwaitingResponse(b) ? 1 : 0;
+                if (aWaiting !== bWaiting) return bWaiting - aWaiting;
+                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+              })
+              .map(item => {
+                const cfg = getStatus(item.status);
+                const StatusIcon = cfg.icon;
+                const needsAction = isAwaitingResponse(item);
+
+                return (
+                  <div
+                    key={item.complaintId}
+                    onClick={() => navigate(`/worker/complaints/${item.complaintId}`)}
+                    className={`rounded-2xl p-5 transition-all cursor-pointer group ${
+                      needsAction
+                        ? 'bg-emerald-50 dark:bg-emerald-900/20 border-2 border-emerald-400 dark:border-emerald-600 hover:shadow-md hover:shadow-emerald-100'
+                        : 'bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 hover:shadow-md hover:border-amber-200 dark:hover:border-amber-700'
+                    }`}
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className={`size-10 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                        needsAction
+                          ? 'bg-emerald-200 dark:bg-emerald-800'
+                          : 'bg-amber-100 dark:bg-amber-900/30'
+                      }`}>
+                        {needsAction
+                          ? <RotateCcw className="size-5 text-emerald-700 dark:text-emerald-300 animate-pulse" />
+                          : <AlertTriangle className="size-5 text-amber-600 dark:text-amber-400" />
+                        }
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3 flex-wrap">
+                          <div className="min-w-0">
+                            <h2 className="font-semibold text-gray-900 dark:text-white text-sm">{item.title}</h2>
+                            {item.targetAgencyName && (
+                              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">Agency: {item.targetAgencyName}</p>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 flex-shrink-0">
+                            {needsAction && (
+                              <span className="text-xs bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full animate-pulse">
+                                Response Needed
+                              </span>
+                            )}
+                            <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${cfg.color}`}>
+                              <StatusIcon className="size-3" />
+                              {cfg.label}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Resolution preview */}
+                        {needsAction && item.resolutionNotes && (
+                          <div className="mt-2 bg-white dark:bg-gray-800 rounded-xl px-3 py-2 border border-emerald-200 dark:border-emerald-700">
+                            <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-0.5">Agency's response:</p>
+                            <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                              {item.resolutionNotes}
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex items-center gap-3 mt-1.5">
+                          <span className="flex items-center gap-1 text-xs text-gray-400">
+                            <Calendar className="size-3" />
+                            {new Date(item.createdAt).toLocaleDateString('en-LK', { day: 'numeric', month: 'long', year: 'numeric' })}
+                          </span>
+                          {item.updatedAt && item.updatedAt !== item.createdAt && (
+                            <span className="text-xs text-gray-400">
+                              · Updated {new Date(item.updatedAt).toLocaleDateString('en-LK', { day: 'numeric', month: 'short' })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <ChevronRight className={`size-4 flex-shrink-0 mt-1 transition-transform group-hover:translate-x-0.5 ${
+                        needsAction ? 'text-emerald-500' : 'text-gray-300'
+                      }`} />
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
       </div>
     </div>
   );

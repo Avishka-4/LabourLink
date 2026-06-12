@@ -5,7 +5,6 @@ import { Card } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import { Checkbox } from '../components/ui/checkbox';
-import { Textarea } from '../components/ui/textarea';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
@@ -44,14 +43,6 @@ export function JobSeekerRegistration() {
     email: '',
     currentCountry: '',
     currentCity: '',
-    preferredJobType: '',
-    preferredLocation: '',
-    experienceYears: '',
-    educationLevel: '',
-    skills: '',
-    languages: '',
-    expectedSalary: '',
-    availableFrom: '',
     password: '',
     confirmPassword: '',
     acceptTerms: false,
@@ -196,6 +187,7 @@ export function JobSeekerRegistration() {
                   required
                 >
                   <option value="">Select nationality</option>
+                  <option value="srilankan">Sri Lankan</option>
                   <option value="india">India</option>
                   <option value="bangladesh">Bangladesh</option>
                   <option value="pakistan">Pakistan</option>
@@ -289,149 +281,6 @@ export function JobSeekerRegistration() {
                   placeholder="City"
                   value={formData.currentCity}
                   onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <hr className="dark:border-gray-700" />
-
-            <h4 className="dark:text-white">Job Preferences</h4>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="preferredJobType">Preferred Job Type *</Label>
-                <select
-                  id="preferredJobType"
-                  name="preferredJobType"
-                  value={formData.preferredJobType}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select job type</option>
-                  <option value="construction">Construction Worker</option>
-                  <option value="housekeeping">Housekeeping/Domestic</option>
-                  <option value="hospitality">Hospitality & Tourism</option>
-                  <option value="manufacturing">Manufacturing</option>
-                  <option value="agriculture">Agriculture</option>
-                  <option value="driver">Driver</option>
-                  <option value="security">Security</option>
-                  <option value="healthcare">Healthcare Support</option>
-                  <option value="retail">Retail/Sales</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-
-              <div>
-                <Label htmlFor="preferredLocation">Preferred Location in Sri Lanka *</Label>
-                <select
-                  id="preferredLocation"
-                  name="preferredLocation"
-                  value={formData.preferredLocation}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select location</option>
-                  <option value="colombo">Colombo</option>
-                  <option value="gampaha">Gampaha</option>
-                  <option value="kalutara">Kalutara</option>
-                  <option value="kandy">Kandy</option>
-                  <option value="galle">Galle</option>
-                  <option value="matara">Matara</option>
-                  <option value="anywhere">Anywhere in Sri Lanka</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="experienceYears">Years of Experience *</Label>
-                <select
-                  id="experienceYears"
-                  name="experienceYears"
-                  value={formData.experienceYears}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select experience</option>
-                  <option value="0">No experience</option>
-                  <option value="1">Less than 1 year</option>
-                  <option value="2">1-2 years</option>
-                  <option value="3">3-5 years</option>
-                  <option value="5">5+ years</option>
-                  <option value="10">10+ years</option>
-                </select>
-              </div>
-
-              <div>
-                <Label htmlFor="educationLevel">Education Level *</Label>
-                <select
-                  id="educationLevel"
-                  name="educationLevel"
-                  value={formData.educationLevel}
-                  onChange={handleChange}
-                  className="w-full px-3 py-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                  required
-                >
-                  <option value="">Select education</option>
-                  <option value="primary">Primary School</option>
-                  <option value="secondary">Secondary School</option>
-                  <option value="high">High School</option>
-                  <option value="diploma">Diploma/Certificate</option>
-                  <option value="degree">Bachelor's Degree</option>
-                  <option value="masters">Master's Degree or Higher</option>
-                </select>
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="skills">Skills & Qualifications</Label>
-              <Textarea
-                id="skills"
-                name="skills"
-                placeholder="List your relevant skills, certifications, and qualifications (e.g., welding, cooking, driving license, etc.)"
-                value={formData.skills}
-                onChange={handleChange}
-                rows={3}
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="languages">Languages Spoken *</Label>
-              <Input
-                id="languages"
-                name="languages"
-                placeholder="e.g., English, Sinhala, Tamil, Hindi"
-                value={formData.languages}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="expectedSalary">Expected Monthly Salary (LKR)</Label>
-                <Input
-                  id="expectedSalary"
-                  name="expectedSalary"
-                  type="number"
-                  placeholder="e.g., 50000"
-                  value={formData.expectedSalary}
-                  onChange={handleChange}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="availableFrom">Available From *</Label>
-                <Input
-                  id="availableFrom"
-                  name="availableFrom"
-                  type="date"
-                  value={formData.availableFrom}
-                  onChange={handleChange}
-                  required
                 />
               </div>
             </div>

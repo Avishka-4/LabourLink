@@ -79,4 +79,18 @@ export const agencyService = {
       body: JSON.stringify(payload),
     }),
   getComplaints: async () => apiRequest('/agency/complaints'),
+  resolveComplaint: async (complaintId: string, resolutionDescription: string) =>
+    apiRequest(`/agency/complaints/${complaintId}/resolve`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resolutionDescription }),
+    }),
+  getRating: async () => apiRequest<AgencyRating>('/agency/rating'),
+};
+
+export type AgencyRating = {
+  averageRating: number;
+  totalRatings: number;
+  fiveStarCount: number;
+  oneStarCount: number;
 };

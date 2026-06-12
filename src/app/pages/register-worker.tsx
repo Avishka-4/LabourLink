@@ -229,6 +229,7 @@ export function WorkerRegistration() {
                   required
                 >
                   <option value="">Select nationality</option>
+                  <option value="srilankan">Sri Lankan</option>
                   <option value="india">India</option>
                   <option value="bangladesh">Bangladesh</option>
                   <option value="pakistan">Pakistan</option>

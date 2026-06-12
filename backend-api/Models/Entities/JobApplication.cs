@@ -11,8 +11,7 @@ public class JobApplication : IAuditableEntity
     [Required]
     public Guid JobId { get; set; }
 
-    [Required]
-    public Guid JobSeekerId { get; set; }
+    public Guid? JobSeekerId { get; set; }
 
     public Guid? WorkerId { get; set; }
 

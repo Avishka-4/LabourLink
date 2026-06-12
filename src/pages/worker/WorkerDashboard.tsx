@@ -3,13 +3,15 @@ import { useNavigate, useLocation } from 'react-router';
 import {
   Users, AlertTriangle, CheckCircle, Clock, Plus, FileText,
   BookOpen, User, LogOut, Shield, Phone, Bell,
-  ChevronRight, Menu, X,
+  ChevronRight, Menu, Briefcase,
 } from 'lucide-react';
 import { workerService } from '@/services/workerService';
 import { authService } from '@/services/authService';
 
 const NAV = [
   { label: 'Dashboard',        href: '/worker',                 icon: Users },
+  { label: 'Browse Jobs',      href: '/worker/jobs',            icon: Briefcase },
+  { label: 'My Applications',  href: '/worker/applications',    icon: FileText },
   { label: 'My Complaints',    href: '/worker/complaints',      icon: AlertTriangle },
   { label: 'Submit Complaint', href: '/worker/complaints/new',  icon: Plus },
   { label: 'Resources',        href: '/worker/resources',       icon: BookOpen },
@@ -46,10 +48,13 @@ export default function WorkerDashboard() {
     navigate('/login/worker');
   };
 
-  const total    = complaints.length;
-  const resolved = complaints.filter(c => c.status.toLowerCase() === 'resolved').length;
-  const pending  = complaints.filter(c => !['resolved'].includes(c.status.toLowerCase())).length;
-  const recent   = [...complaints].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
+  const total       = complaints.length;
+  const resolved    = complaints.filter(c => c.status.toLowerCase() === 'resolved').length;
+  const pending     = complaints.filter(c => !['resolved', 'closed'].includes(c.status.toLowerCase())).length;
+  const needsAction = (complaints as any[]).filter(c =>
+    c.status.toLowerCase() === 'resolved' && c.resolutionNotes
+  ).length;
+  const recent = [...complaints].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()).slice(0, 5);
 
   const statusColor = (s: string) => {
     const l = s.toLowerCase();
@@ -162,6 +167,29 @@ export default function WorkerDashboard() {
             </div>
           )}
 
+          {/* Agency response alert */}
+          {!loading && needsAction > 0 && (
+            <button
+              onClick={() => navigate('/worker/complaints')}
+              className="w-full flex items-center gap-4 bg-gradient-to-r from-emerald-500 to-teal-500 rounded-2xl px-5 py-4 text-white shadow-lg hover:shadow-xl transition-shadow text-left group"
+            >
+              <div className="size-10 bg-white/20 rounded-xl flex items-center justify-center flex-shrink-0 animate-bounce">
+                <Bell className="size-5 text-white" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm">
+                  {needsAction === 1
+                    ? 'Agency responded to your complaint!'
+                    : `${needsAction} agencies responded to your complaints!`}
+                </p>
+                <p className="text-emerald-100 text-xs mt-0.5">
+                  Tap to review and tell them if you're satisfied or want to reopen
+                </p>
+              </div>
+              <ChevronRight className="size-5 text-white flex-shrink-0 group-hover:translate-x-1 transition-transform" />
+            </button>
+          )}
+
           {/* Hero banner */}
           <div className="rounded-2xl bg-gradient-to-r from-amber-600 to-orange-500 p-6 sm:p-8 text-white relative overflow-hidden">
             <div className="absolute inset-0 opacity-10">
@@ -178,8 +206,14 @@ export default function WorkerDashboard() {
               </p>
               <div className="flex flex-wrap gap-3">
                 <button
-                  onClick={() => navigate('/worker/complaints/new')}
+                  onClick={() => navigate('/worker/jobs')}
                   className="bg-white text-amber-700 hover:bg-amber-50 text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2"
+                >
+                  <Briefcase className="size-4" /> Browse Jobs
+                </button>
+                <button
+                  onClick={() => navigate('/worker/complaints/new')}
+                  className="bg-amber-700/40 hover:bg-amber-700/60 text-white text-sm font-semibold px-4 py-2 rounded-lg transition flex items-center gap-2"
                 >
                   <Plus className="size-4" /> Submit Complaint
                 </button>
@@ -196,16 +230,20 @@ export default function WorkerDashboard() {
           {/* Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Total Complaints', value: loading ? '—' : total,    icon: FileText,       color: 'amber' },
-              { label: 'Pending',          value: loading ? '—' : pending,  icon: Clock,          color: 'orange' },
-              { label: 'Resolved',         value: loading ? '—' : resolved, icon: CheckCircle,    color: 'green' },
-              { label: 'Account Status',   value: profile?.status ?? '—',   icon: Shield,         color: 'blue' },
-            ].map(({ label, value, icon: Icon, color }) => (
-              <div key={label} className="bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
+              { label: 'Total Complaints', value: loading ? '—' : total,       icon: FileText,    color: 'amber',   onClick: undefined },
+              { label: 'Pending',          value: loading ? '—' : pending,     icon: Clock,       color: 'orange',  onClick: undefined },
+              { label: 'Resolved',         value: loading ? '—' : resolved,    icon: CheckCircle, color: 'green',   onClick: undefined },
+              { label: 'Need Response',    value: loading ? '—' : needsAction, icon: Bell,        color: needsAction > 0 ? 'emerald' : 'blue', onClick: needsAction > 0 ? () => navigate('/worker/complaints') : undefined },
+            ].map(({ label, value, icon: Icon, color, onClick }) => (
+              <div
+                key={label}
+                onClick={onClick}
+                className={`bg-white dark:bg-gray-800 rounded-xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 ${onClick ? 'cursor-pointer hover:shadow-md hover:border-emerald-300 transition' : ''} ${label === 'Need Response' && needsAction > 0 ? 'border-emerald-300 dark:border-emerald-600' : ''}`}
+              >
                 <div className={`inline-flex p-2 rounded-lg mb-3 bg-${color}-100 dark:bg-${color}-900/30`}>
-                  <Icon className={`size-5 text-${color}-600 dark:text-${color}-400`} />
+                  <Icon className={`size-5 text-${color}-600 dark:text-${color}-400 ${label === 'Need Response' && needsAction > 0 ? 'animate-pulse' : ''}`} />
                 </div>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{value}</p>
+                <p className={`text-2xl font-bold ${label === 'Need Response' && needsAction > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-900 dark:text-white'}`}>{value}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{label}</p>
               </div>
             ))}
@@ -238,22 +276,42 @@ export default function WorkerDashboard() {
                     </button>
                   </div>
                 ) : (
-                  recent.map((c, i) => (
-                    <div key={i} className="flex items-center justify-between px-6 py-3 hover:bg-amber-50/50 dark:hover:bg-gray-700/50 transition">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="bg-amber-100 dark:bg-amber-900/30 p-1.5 rounded-lg flex-shrink-0">
-                          <AlertTriangle className="size-4 text-amber-600" />
+                  recent.map((c: any, i) => {
+                    const needsResp = c.status?.toLowerCase() === 'resolved' && c.resolutionNotes;
+                    return (
+                      <button
+                        key={i}
+                        onClick={() => navigate(`/worker/complaints/${c.complaintId}`)}
+                        className={`w-full flex items-center justify-between px-6 py-3 text-left transition ${
+                          needsResp
+                            ? 'bg-emerald-50 dark:bg-emerald-900/10 hover:bg-emerald-100 dark:hover:bg-emerald-900/20'
+                            : 'hover:bg-amber-50/50 dark:hover:bg-gray-700/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`p-1.5 rounded-lg flex-shrink-0 ${needsResp ? 'bg-emerald-100 dark:bg-emerald-800' : 'bg-amber-100 dark:bg-amber-900/30'}`}>
+                            <AlertTriangle className={`size-4 ${needsResp ? 'text-emerald-600' : 'text-amber-600'}`} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{c.title}</p>
+                            {needsResp ? (
+                              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">Agency responded — tap to review</p>
+                            ) : (
+                              <p className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium text-gray-800 dark:text-gray-200 truncate">{c.title}</p>
-                          <p className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleDateString()}</p>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                          {needsResp && (
+                            <span className="text-xs bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full animate-pulse">!</span>
+                          )}
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${statusColor(c.status)}`}>
+                            {c.status}
+                          </span>
                         </div>
-                      </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full font-medium flex-shrink-0 ml-2 ${statusColor(c.status)}`}>
-                        {c.status}
-                      </span>
-                    </div>
-                  ))
+                      </button>
+                    );
+                  })
                 )}
               </div>
             </div>

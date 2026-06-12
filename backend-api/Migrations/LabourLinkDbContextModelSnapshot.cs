@@ -1129,6 +1129,10 @@ namespace LabourLinkAPI.Migrations
                     b.Property<DateTime>("SubmittedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("TargetAgencyName")
+                        .HasMaxLength(255)
+                        .HasColumnType("varchar(255)");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(255)

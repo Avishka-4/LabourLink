@@ -79,7 +79,13 @@ export default function BrowseJobsPage() {
   useEffect(() => {
     document.title = 'Browse Jobs — LabourLink';
     (async () => {
-      await loadJobs();
+      const [, saved] = await Promise.allSettled([
+        loadJobs(),
+        jobSeekerService.getSavedJobs(),
+      ]);
+      if (saved.status === 'fulfilled' && Array.isArray(saved.value)) {
+        setSavedIds(new Set(saved.value.map(j => j.jobId)));
+      }
       setLoading(false);
     })();
   }, [loadJobs]);
@@ -96,14 +102,14 @@ export default function BrowseJobsPage() {
 
   const handleSave = async (e: React.MouseEvent, jobId: string) => {
     e.stopPropagation();
-    if (savingId) return;
+    if (savingId || savedIds.has(jobId)) return;
     setSavingId(jobId);
     try {
       await jobSeekerService.saveJob(jobId);
       setSavedIds(prev => new Set([...prev, jobId]));
       toast.success('Job saved!');
-    } catch {
-      toast.error('Failed to save job.');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to save job.');
     } finally {
       setSavingId(null);
     }

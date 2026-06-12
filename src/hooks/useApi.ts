@@ -138,12 +138,12 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
     const text = await response.text();
     let message = `Request failed (${response.status})`;
     try {
-      const json = JSON.parse(text) as { message?: string; title?: string; errors?: Record<string, string[]> };
+      const json = JSON.parse(text) as { message?: string; title?: string; detail?: string; errors?: Record<string, string[]> };
       if (json.errors) {
         const allErrors = Object.values(json.errors).flat();
-        message = allErrors.length > 0 ? allErrors.join('. ') : (json.title ?? message);
+        message = allErrors.length > 0 ? allErrors.join('. ') : (json.detail ?? json.title ?? message);
       } else {
-        message = json.message ?? json.title ?? message;
+        message = json.message ?? json.detail ?? json.title ?? message;
       }
     } catch {
       if (text) message = text;

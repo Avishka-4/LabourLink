@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   ArrowLeft, AlertTriangle, Clock, CheckCircle,
-  User, Calendar, Shield, FileText, Tag,
+  User, Calendar, Shield, FileText, Tag, CheckCheck, X,
 } from 'lucide-react';
 import { agencyService } from '@/services/agencyService';
 
@@ -12,8 +12,24 @@ type AgencyComplaint = {
   type: string;
   status: string;
   workerName?: string | null;
+  resolutionNotes?: string | null;
+  workerRating?: number | null;
+  resolvedAt?: string | null;
   createdAt: string;
 };
+
+function StarBadge({ rating }: { rating: number }) {
+  return (
+    <span className={`inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-full font-medium ${
+      rating === 5
+        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300'
+        : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300'
+    }`}>
+      {'★'.repeat(rating)}{'☆'.repeat(5 - rating)}
+      <span className="ml-1">{rating === 5 ? 'Satisfied' : 'Unsatisfied'}</span>
+    </span>
+  );
+}
 
 const STATUS_MAP: Record<string, { label: string; color: string; icon: typeof Clock }> = {
   submitted:   { label: 'Submitted',    color: 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300',           icon: FileText },
@@ -44,12 +60,19 @@ function formatType(t: string): string {
 
 type TabFilter = 'all' | 'active' | 'resolved';
 
+type ResolveModal = { complaintId: string; title: string } | null;
+
 export default function AgencyComplaintsPage() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [complaints, setComplaints] = useState<AgencyComplaint[]>([]);
   const [tab, setTab] = useState<TabFilter>('all');
   const [error, setError] = useState<string | null>(null);
+  const [resolveModal, setResolveModal] = useState<ResolveModal>(null);
+  const [resolutionText, setResolutionText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     document.title = 'Worker Complaints — LabourLink';
@@ -58,6 +81,14 @@ export default function AgencyComplaintsPage() {
       .catch(() => setError('Failed to load complaints.'))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (resolveModal) {
+      setResolutionText('');
+      setSubmitError(null);
+      setTimeout(() => textareaRef.current?.focus(), 50);
+    }
+  }, [resolveModal]);
 
   const filtered = complaints.filter(c => {
     const s = c.status.toLowerCase().replace(/[^a-z]/g, '');
@@ -72,6 +103,29 @@ export default function AgencyComplaintsPage() {
     active: complaints.filter(c => !['resolved', 'closed'].includes(c.status.toLowerCase().replace(/[^a-z]/g, ''))).length,
     resolved: complaints.filter(c => ['resolved', 'closed'].includes(c.status.toLowerCase().replace(/[^a-z]/g, ''))).length,
   };
+
+  async function handleResolve() {
+    if (!resolveModal || !resolutionText.trim()) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await agencyService.resolveComplaint(resolveModal.complaintId, resolutionText.trim());
+      setComplaints(prev => prev.map(c =>
+        c.complaintId === resolveModal.complaintId
+          ? { ...c, status: 'Resolved', resolutionNotes: resolutionText.trim(), resolvedAt: new Date().toISOString() }
+          : c
+      ));
+      setResolveModal(null);
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to mark complaint as resolved. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  function isActive(status: string) {
+    return !['resolved', 'closed'].includes(status.toLowerCase().replace(/[^a-z]/g, ''));
+  }
 
   if (loading) {
     return (
@@ -151,9 +205,9 @@ export default function AgencyComplaintsPage() {
         {/* Info banner */}
         <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4 mb-6">
           <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
-            <strong>How this works:</strong> When a worker files a complaint and mentions your agency name,
-            it appears here so you can be aware and take corrective action. The LabourLink team oversees all complaints.
-            Complaints are managed in coordination with government authorities.
+            <strong>How this works:</strong> When a worker files a complaint against your agency, it appears here.
+            You can mark a complaint as resolved with a description of how it was addressed.
+            Workers will be asked to confirm satisfaction or reopen the case if unresolved.
           </p>
         </div>
 
@@ -176,6 +230,7 @@ export default function AgencyComplaintsPage() {
               .map(item => {
                 const cfg = getStatus(item.status);
                 const StatusIcon = cfg.icon;
+                const active = isActive(item.status);
                 return (
                   <div
                     key={item.complaintId}
@@ -208,6 +263,39 @@ export default function AgencyComplaintsPage() {
                             {new Date(item.createdAt).toLocaleDateString('en-LK', { day: 'numeric', month: 'long', year: 'numeric' })}
                           </span>
                         </div>
+
+                        {/* Resolution notes + worker rating (shown when resolved) */}
+                        {!active && (
+                          <div className="mt-3 space-y-2">
+                            {item.resolutionNotes && (
+                              <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3">
+                                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">Your resolution:</p>
+                                <p className="text-xs text-emerald-700 dark:text-emerald-300 leading-relaxed">{item.resolutionNotes}</p>
+                              </div>
+                            )}
+                            {item.workerRating != null && (
+                              <div className="flex items-center gap-2">
+                                <span className="text-xs text-gray-400">Worker feedback:</span>
+                                <StarBadge rating={item.workerRating} />
+                              </div>
+                            )}
+                            {item.workerRating == null && item.resolutionNotes && (
+                              <p className="text-xs text-gray-400 italic">Awaiting worker feedback…</p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Resolve button for active complaints */}
+                        {active && (
+                          <div className="mt-3">
+                            <button
+                              onClick={() => setResolveModal({ complaintId: item.complaintId, title: item.title })}
+                              className="inline-flex items-center gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-3 py-1.5 rounded-lg transition"
+                            >
+                              <CheckCheck className="size-3.5" /> Mark as Resolved
+                            </button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -216,6 +304,89 @@ export default function AgencyComplaintsPage() {
           </div>
         )}
       </div>
+
+      {/* Resolve Modal */}
+      {resolveModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-lg border border-gray-100 dark:border-gray-700">
+            {/* Modal header */}
+            <div className="flex items-center justify-between p-5 border-b border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3">
+                <div className="size-9 bg-emerald-100 dark:bg-emerald-900/40 rounded-xl flex items-center justify-center">
+                  <CheckCheck className="size-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-900 dark:text-white text-sm">Mark as Resolved</h2>
+                  <p className="text-xs text-gray-400 mt-0.5 truncate max-w-[280px]">{resolveModal.title}</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setResolveModal(null)}
+                className="size-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="p-5 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  How was this complaint resolved? <span className="text-red-500">*</span>
+                </label>
+                <textarea
+                  ref={textareaRef}
+                  value={resolutionText}
+                  onChange={e => setResolutionText(e.target.value)}
+                  rows={5}
+                  placeholder="Describe the steps taken to resolve this complaint. For example: 'We reviewed the worker's wage records and issued the missing payment of LKR 25,000. We have also updated our payroll process to prevent future occurrences.'"
+                  className="w-full rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-sm text-gray-800 dark:text-gray-200 p-3 placeholder-gray-400 resize-none focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent leading-relaxed"
+                />
+                <p className="text-xs text-gray-400 mt-1.5">{resolutionText.trim().length} characters — be specific so the worker understands what action was taken.</p>
+              </div>
+
+              {submitError && (
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3 text-xs text-red-700 dark:text-red-400">
+                  {submitError}
+                </div>
+              )}
+
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-xl p-3">
+                <p className="text-xs text-blue-700 dark:text-blue-400 leading-relaxed">
+                  The worker will be notified and asked to confirm whether they are satisfied with the resolution or wish to reopen the case.
+                </p>
+              </div>
+            </div>
+
+            {/* Modal footer */}
+            <div className="flex items-center justify-end gap-3 p-5 border-t border-gray-100 dark:border-gray-700">
+              <button
+                onClick={() => setResolveModal(null)}
+                disabled={submitting}
+                className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-xl transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleResolve}
+                disabled={submitting || !resolutionText.trim()}
+                className="inline-flex items-center gap-2 px-5 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition"
+              >
+                {submitting ? (
+                  <>
+                    <span className="size-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Saving…
+                  </>
+                ) : (
+                  <>
+                    <CheckCheck className="size-4" /> Mark Resolved
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

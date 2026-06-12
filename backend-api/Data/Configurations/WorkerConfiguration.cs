@@ -31,6 +31,9 @@ public class WorkerConfiguration : IEntityTypeConfiguration<Worker>
 
         builder.Property(worker => worker.DateOfBirth)
             .HasColumnType("date")
+            .HasConversion(
+                d => d.ToDateTime(TimeOnly.MinValue),
+                dt => DateOnly.FromDateTime(dt))
             .IsRequired();
 
         builder.Property(worker => worker.Gender)

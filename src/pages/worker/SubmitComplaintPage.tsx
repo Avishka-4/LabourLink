@@ -2,10 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import {
-  ArrowLeft, AlertTriangle, FileText, Building2,
-  Upload, X, CheckCircle,
+  ArrowLeft, AlertTriangle, Building2, CheckCircle, ChevronDown,
 } from 'lucide-react';
-import { workerService } from '@/services/workerService';
+import { workerService, type AgencyListItem } from '@/services/workerService';
 
 const COMPLAINT_TYPES = [
   { value: 'WagetheftIssue', label: 'Wage Theft / Non-Payment', icon: '💰' },
@@ -22,6 +21,8 @@ export default function SubmitComplaintPage() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agencies, setAgencies] = useState<AgencyListItem[]>([]);
+  const [agenciesLoading, setAgenciesLoading] = useState(true);
 
   const [form, setForm] = useState({
     type: '',
@@ -33,10 +34,15 @@ export default function SubmitComplaintPage() {
 
   useEffect(() => {
     document.title = 'Submit Complaint — LabourLink';
+    workerService.getAgencies()
+      .then(setAgencies)
+      .catch(() => setAgencies([]))
+      .finally(() => setAgenciesLoading(false));
   }, []);
 
   const validate = () => {
     const e: Record<string, string> = {};
+    if (!form.targetAgencyName) e.targetAgencyName = 'Please select the agency your complaint is about';
     if (!form.type) e.type = 'Please select a complaint type';
     if (!form.title.trim()) e.title = 'Title is required';
     else if (form.title.trim().length < 5) e.title = 'Title must be at least 5 characters';
@@ -57,7 +63,7 @@ export default function SubmitComplaintPage() {
         type: form.type,
         title: form.title.trim(),
         description: form.description.trim(),
-        targetAgencyName: form.targetAgencyName.trim() || undefined,
+        targetAgencyName: form.targetAgencyName,
       });
       setSubmitted(true);
       toast.success('Complaint submitted successfully!');
@@ -82,7 +88,7 @@ export default function SubmitComplaintPage() {
           </div>
           <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Complaint Submitted</h2>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-            Your complaint has been received and will be reviewed by our team. You can track the status in "My Complaints".
+            Your complaint has been forwarded to <strong className="text-gray-700 dark:text-gray-300">{form.targetAgencyName}</strong> and will be reviewed promptly. You can track the status in "My Complaints".
           </p>
           <div className="flex gap-3">
             <button
@@ -120,7 +126,7 @@ export default function SubmitComplaintPage() {
             </div>
             <div>
               <h1 className="text-2xl font-bold text-white">File a Complaint</h1>
-              <p className="text-amber-100 text-sm">Your complaint is confidential and will be reviewed promptly</p>
+              <p className="text-amber-100 text-sm">Your complaint is confidential and will be forwarded to the relevant agency</p>
             </div>
           </div>
         </div>
@@ -134,6 +140,46 @@ export default function SubmitComplaintPage() {
               {error}
             </div>
           )}
+
+          {/* Agency Selection — FIRST and REQUIRED */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
+            <div className="flex items-center gap-2 mb-2">
+              <Building2 className="size-4 text-amber-600" />
+              <label htmlFor="agencySelect" className="text-sm font-semibold text-gray-900 dark:text-white">
+                Select Agency <span className="text-red-500">*</span>
+              </label>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+              Choose the registered agency your complaint is directed at. Your complaint will be forwarded directly to their dashboard.
+            </p>
+            <div className="relative">
+              <select
+                id="agencySelect"
+                value={form.targetAgencyName}
+                onChange={e => update('targetAgencyName', e.target.value)}
+                disabled={agenciesLoading}
+                className={`w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-400 transition disabled:opacity-60 ${
+                  errors.targetAgencyName ? 'border-red-400' : 'border-gray-200 dark:border-gray-600'
+                }`}
+              >
+                <option value="">
+                  {agenciesLoading ? 'Loading agencies…' : '— Select an agency —'}
+                </option>
+                {agencies.map(a => (
+                  <option key={a.agencyId} value={a.companyName}>
+                    {a.companyName}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 size-4 text-gray-400" />
+            </div>
+            {errors.targetAgencyName && <p className="text-xs text-red-500 mt-2">{errors.targetAgencyName}</p>}
+            {!agenciesLoading && agencies.length === 0 && (
+              <p className="text-xs text-amber-600 dark:text-amber-400 mt-2">
+                No agencies found. Please contact support if you believe this is an error.
+              </p>
+            )}
+          </div>
 
           {/* Complaint Type */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
@@ -208,41 +254,18 @@ export default function SubmitComplaintPage() {
             </div>
           </div>
 
-          {/* Agency Name (optional) */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-6">
-            <div className="flex items-center gap-2 mb-2">
-              <Building2 className="size-4 text-amber-600" />
-              <label htmlFor="agencyName" className="text-sm font-semibold text-gray-900 dark:text-white">
-                Agency / Company Name <span className="text-gray-400 font-normal">(optional)</span>
-              </label>
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-              If your complaint is about a specific agency or employer, enter their name here. This helps us forward your complaint to the right party.
-            </p>
-            <input
-              id="agencyName"
-              type="text"
-              value={form.targetAgencyName}
-              onChange={e => update('targetAgencyName', e.target.value)}
-              placeholder="e.g., ABC Recruitment Agency"
-              maxLength={255}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 dark:border-gray-600 text-sm bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-amber-400 transition"
-            />
-          </div>
-
           {/* Info box */}
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-4">
             <p className="text-xs text-amber-700 dark:text-amber-400 leading-relaxed">
               <strong>Your privacy matters.</strong> All complaints are treated confidentially.
-              The LabourLink team will review your complaint and take appropriate action.
-              If you entered an agency name, they may be contacted for their response.
+              Your complaint will be forwarded directly to the selected agency's dashboard, and the LabourLink team will oversee the resolution process.
             </p>
           </div>
 
           {/* Submit */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || agenciesLoading}
             className="w-full bg-amber-600 hover:bg-amber-700 disabled:bg-amber-400 text-white font-semibold text-sm py-3.5 rounded-xl transition flex items-center justify-center gap-2"
           >
             {loading ? (

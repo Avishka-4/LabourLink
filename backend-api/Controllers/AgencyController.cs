@@ -512,7 +512,7 @@ public sealed class AgencyController : ControllerBase
             .Include(c => c.Worker)
             .ThenInclude(w => w.User)
             .Where(c => c.TargetAgencyName != null &&
-                        c.TargetAgencyName.ToLower() == agency.CompanyName.ToLower())
+                        c.TargetAgencyName.Trim().ToLower() == agency.CompanyName.Trim().ToLower())
             .OrderByDescending(c => c.CreatedAt)
             .Select(c => new AgencyComplaintResponse
             {
@@ -520,6 +520,9 @@ public sealed class AgencyController : ControllerBase
                 Title = c.Title,
                 Type = c.ComplaintType.ToString(),
                 Status = c.Status.ToString(),
+                ResolutionNotes = c.ResolutionNotes,
+                WorkerRating = c.WorkerRating,
+                ResolvedAt = c.ResolvedAt,
                 CreatedAt = c.CreatedAt,
                 WorkerName = c.Worker != null && c.Worker.User != null
                     ? $"{c.Worker.User.FirstName} {c.Worker.User.LastName}".Trim()
@@ -528,6 +531,69 @@ public sealed class AgencyController : ControllerBase
             .ToListAsync(cancellationToken);
 
         return Ok(complaints);
+    }
+
+    [HttpGet("rating")]
+    [ProducesResponseType(typeof(AgencyRatingResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AgencyRatingResponse>> GetRating(CancellationToken cancellationToken = default)
+    {
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
+
+        var ratedComplaints = await _db.WorkerComplaints
+            .AsNoTracking()
+            .Where(c => c.TargetAgencyName != null && c.WorkerRating != null)
+            .ToListAsync(cancellationToken);
+
+        var agencyName = agency.CompanyName.Trim().ToLowerInvariant();
+        var filtered = ratedComplaints
+            .Where(c => c.TargetAgencyName!.Trim().ToLowerInvariant() == agencyName)
+            .ToList();
+
+        if (filtered.Count == 0)
+        {
+            return Ok(new AgencyRatingResponse
+            {
+                AverageRating = 0,
+                TotalRatings = 0,
+                FiveStarCount = 0,
+                OneStarCount = 0,
+            });
+        }
+
+        return Ok(new AgencyRatingResponse
+        {
+            AverageRating = Math.Round(filtered.Average(c => c.WorkerRating!.Value), 1),
+            TotalRatings = filtered.Count,
+            FiveStarCount = filtered.Count(c => c.WorkerRating == 5),
+            OneStarCount = filtered.Count(c => c.WorkerRating == 1),
+        });
+    }
+
+    [HttpPut("complaints/{complaintId:guid}/resolve")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MessageResponse>> ResolveComplaint(
+        Guid complaintId,
+        [FromBody] ResolveComplaintRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var agency = await GetOrCreateAgencyAsync(cancellationToken);
+
+        var complaint = await _db.WorkerComplaints
+            .FirstOrDefaultAsync(c => c.ComplaintId == complaintId, cancellationToken);
+
+        if (complaint == null)
+        {
+            return NotFound();
+        }
+
+        complaint.Status = ComplaintStatus.Resolved;
+        complaint.ResolutionNotes = request.ResolutionDescription;
+        complaint.ResolvedAt = DateTime.UtcNow;
+        complaint.UpdatedAt = DateTime.UtcNow;
+
+        await _db.SaveChangesAsync(cancellationToken);
+
+        return Ok(new MessageResponse { Message = "Complaint marked as resolved" });
     }
 
     private async Task<RecruitmentAgency> GetOrCreateAgencyAsync(CancellationToken cancellationToken)

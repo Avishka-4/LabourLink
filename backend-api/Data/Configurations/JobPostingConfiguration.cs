@@ -51,7 +51,10 @@ public class JobPostingConfiguration : IEntityTypeConfiguration<JobPosting>
             .HasMaxLength(100);
 
         builder.Property(job => job.ApplicationDeadline)
-            .HasColumnType("date");
+            .HasColumnType("date")
+            .HasConversion(
+                d => d.HasValue ? (DateTime?)d.Value.ToDateTime(TimeOnly.MinValue) : null,
+                dt => dt.HasValue ? (DateOnly?)DateOnly.FromDateTime(dt.Value) : null);
 
         builder.Property(job => job.PostedAt)
             .HasColumnType("datetime(6)")

@@ -23,9 +23,7 @@ export default function LoginPage() {
           try {
             const result = await authService.login(email, password);
             const role = result.role;
-            if (role === 'Administrator') {
-              navigate('/admin');
-            } else if (role === 'RecruitmentAgency') {
+            if (role === 'RecruitmentAgency') {
               navigate('/agency');
             } else if (role === 'JobSeeker') {
               navigate('/jobseeker');

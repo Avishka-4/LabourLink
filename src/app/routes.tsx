@@ -1,16 +1,13 @@
 import { createBrowserRouter } from "react-router";
 import { MainLayout } from "@/components";
 import ProtectedRoute from "@/routes/ProtectedRoute";
-import RoleProtectedRoute from "@/routes/RoleProtectedRoute";
 import { LandingPage } from "./pages/landing";
 import WorkerDashboard from "@/pages/worker/WorkerDashboard";
 import AgencyDashboard from "@/pages/agency/AgencyDashboard";
 import JobSeekerDashboard from "@/pages/jobseeker/JobSeekerDashboard";
-import AdminDashboard from "@/pages/admin/AdminDashboard";
 import { AgencyLogin } from "./pages/login-agency";
 import { WorkerLogin } from "./pages/login-worker";
 import { JobSeekerLogin } from "./pages/login-jobseeker";
-import { AdminLogin } from "./pages/admin-login";
 import { AgencyRegistration } from "./pages/register-agency";
 import { WorkerRegistration } from "./pages/register-worker";
 import { JobSeekerRegistration } from "./pages/register-jobseeker";
@@ -30,6 +27,9 @@ import SubmitComplaintPage from "@/pages/worker/SubmitComplaintPage";
 import ComplaintDetailPage from "@/pages/worker/ComplaintDetailPage";
 import WorkerProfilePage from "@/pages/worker/WorkerProfilePage";
 import WorkerResourcesPage from "@/pages/worker/GovernmentResourcesPage";
+import WorkerBrowseJobsPage from "@/pages/worker/WorkerBrowseJobsPage";
+import WorkerJobDetailPage from "@/pages/worker/WorkerJobDetailPage";
+import WorkerMyApplicationsPage from "@/pages/worker/WorkerMyApplicationsPage";
 import JobSeekerBrowseJobsPage from "@/pages/jobseeker/BrowseJobsPage";
 import JobSeekerJobDetailPage from "@/pages/jobseeker/JobDetailPage";
 import MyApplicationsPage from "@/pages/jobseeker/MyApplicationsPage";
@@ -42,17 +42,6 @@ import JobApplicationsPage from "@/pages/agency/JobApplicationsPage";
 import AgencyProfilePage from "@/pages/agency/AgencyProfilePage";
 import AgencyReportsPage from "@/pages/agency/AgencyReportsPage";
 import AgencyComplaintsPage from "@/pages/agency/AgencyComplaintsPage";
-import ManageUsersPage from "@/pages/admin/ManageUsersPage";
-import UserDetailPage from "@/pages/admin/UserDetailPage";
-import PendingWorkersPage from "@/pages/admin/PendingWorkersPage";
-import PendingAgenciesPage from "@/pages/admin/PendingAgenciesPage";
-import JobApprovalsPage from "@/pages/admin/JobApprovalsPage";
-import ManageComplaintsPage from "@/pages/admin/ManageComplaintsPage";
-import ManageNewsPage from "@/pages/admin/ManageNewsPage";
-import CreateNewsPage from "@/pages/admin/CreateNewsPage";
-import AuditLogsPage from "@/pages/admin/AuditLogsPage";
-import AdminReportsPage from "@/pages/admin/AdminReportsPage";
-import AdminSettingsPage from "@/pages/admin/AdminSettingsPage";
 import ForbiddenPage from "@/pages/ErrorPages/ForbiddenPage";
 import ErrorPage from "@/pages/ErrorPages/ErrorPage";
 import NotFoundPage from "@/pages/ErrorPages/NotFoundPage";
@@ -151,18 +140,6 @@ export const router = createBrowserRouter([
     ),
   },
   {
-    path: "/admin/login",
-    element: <AdminLogin />,
-  },
-  {
-    path: "/admin",
-    element: (
-      <ProtectedRoute requiredRole="Administrator">
-        <AdminDashboard />
-      </ProtectedRoute>
-    ),
-  },
-  {
     path: "/worker/complaints",
     element: (
       <ProtectedRoute requiredRole="Worker">
@@ -208,6 +185,36 @@ export const router = createBrowserRouter([
       <ProtectedRoute requiredRole="Worker">
         <MainLayout>
           <WorkerResourcesPage />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/worker/jobs",
+    element: (
+      <ProtectedRoute requiredRole="Worker">
+        <MainLayout>
+          <WorkerBrowseJobsPage />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/worker/jobs/:id",
+    element: (
+      <ProtectedRoute requiredRole="Worker">
+        <MainLayout>
+          <WorkerJobDetailPage />
+        </MainLayout>
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/worker/applications",
+    element: (
+      <ProtectedRoute requiredRole="Worker">
+        <MainLayout>
+          <WorkerMyApplicationsPage />
         </MainLayout>
       </ProtectedRoute>
     ),
@@ -330,116 +337,6 @@ export const router = createBrowserRouter([
           <AgencyComplaintsPage />
         </MainLayout>
       </ProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/users",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <ManageUsersPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/users/:id",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <UserDetailPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/workers/pending",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <PendingWorkersPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/agencies/pending",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <PendingAgenciesPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/jobs/pending",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <JobApprovalsPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/complaints",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <ManageComplaintsPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/news",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <ManageNewsPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/news/new",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <CreateNewsPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/audit-logs",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <AuditLogsPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/reports",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <AdminReportsPage />
-        </MainLayout>
-      </RoleProtectedRoute>
-    ),
-  },
-  {
-    path: "/admin/settings",
-    element: (
-      <RoleProtectedRoute requiredRole="Administrator">
-        <MainLayout>
-          <AdminSettingsPage />
-        </MainLayout>
-      </RoleProtectedRoute>
     ),
   },
   {

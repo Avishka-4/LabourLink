@@ -221,6 +221,42 @@ public sealed class AdminController : ControllerBase
         return Ok(complaints);
     }
 
+    [HttpGet("complaints/{complaintId:guid}")]
+    [ProducesResponseType(typeof(ComplaintDetailResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ComplaintDetailResponse>> GetComplaint(
+        Guid complaintId,
+        CancellationToken cancellationToken = default)
+    {
+        var complaint = await _db.WorkerComplaints
+            .AsNoTracking()
+            .Include(c => c.Worker)
+            .ThenInclude(w => w!.User)
+            .FirstOrDefaultAsync(c => c.ComplaintId == complaintId, cancellationToken);
+
+        if (complaint == null)
+            return NotFound();
+
+        return Ok(new ComplaintDetailResponse
+        {
+            ComplaintId = complaint.ComplaintId,
+            Type = complaint.ComplaintType.ToString(),
+            Title = complaint.Title,
+            Description = complaint.Description,
+            Status = complaint.Status.ToString(),
+            Priority = complaint.Priority.ToString(),
+            WorkerName = complaint.Worker?.User != null
+                ? $"{complaint.Worker.User.FirstName} {complaint.Worker.User.LastName}".Trim()
+                : null,
+            WorkerEmail = complaint.Worker?.User?.Email,
+            TargetAgencyName = complaint.TargetAgencyName,
+            AttachmentUrl = complaint.AttachmentUrl,
+            ResolutionNotes = complaint.ResolutionNotes,
+            CreatedAt = complaint.CreatedAt,
+            ReviewedAt = complaint.ReviewedAt,
+            ResolvedAt = complaint.ResolvedAt,
+        });
+    }
+
     [HttpPut("complaints/{complaintId:guid}/assign")]
     [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<MessageResponse>> AssignComplaint(

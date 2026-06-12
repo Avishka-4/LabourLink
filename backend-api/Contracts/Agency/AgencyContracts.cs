@@ -122,7 +122,23 @@ public class AgencyComplaintResponse
     public string Type { get; set; } = default!;
     public string Status { get; set; } = default!;
     public string? WorkerName { get; set; }
+    public string? ResolutionNotes { get; set; }
+    public int? WorkerRating { get; set; }
     public DateTime CreatedAt { get; set; }
+    public DateTime? ResolvedAt { get; set; }
+}
+
+public class ResolveComplaintRequest
+{
+    public string ResolutionDescription { get; set; } = default!;
+}
+
+public class AgencyRatingResponse
+{
+    public double AverageRating { get; set; }
+    public int TotalRatings { get; set; }
+    public int FiveStarCount { get; set; }
+    public int OneStarCount { get; set; }
 }
 
 public class JobAnalyticsSummary

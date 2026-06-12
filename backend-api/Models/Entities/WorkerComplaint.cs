@@ -34,6 +34,8 @@ public class WorkerComplaint : IAuditableEntity
 
     public string? ResolutionNotes { get; set; }
 
+    public int? WorkerRating { get; set; }
+
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
     public DateTime SubmittedAt { get; set; } = DateTime.UtcNow;

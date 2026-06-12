@@ -3,9 +3,9 @@ import { useNavigate, useLocation } from 'react-router';
 import {
   Briefcase, BarChart2, Plus, FileText, Users,
   LogOut, Bell, ChevronRight, Menu, Eye, CheckCircle,
-  Clock, TrendingUp, User, ClipboardList, AlertTriangle,
+  TrendingUp, User, ClipboardList, AlertTriangle, Star,
 } from 'lucide-react';
-import { agencyService, type AgencyProfile, type AgencyStats } from '@/services/agencyService';
+import { agencyService, type AgencyProfile, type AgencyStats, type AgencyRating } from '@/services/agencyService';
 import { authService } from '@/services/authService';
 
 const NAV = [
@@ -26,6 +26,7 @@ export default function AgencyDashboard() {
   const [profile, setProfile] = useState<AgencyProfile | null>(null);
   const [stats, setStats] = useState<AgencyStats | null>(null);
   const [jobs, setJobs] = useState<JobRow[]>([]);
+  const [rating, setRating] = useState<AgencyRating | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -33,13 +34,15 @@ export default function AgencyDashboard() {
     document.title = 'Agency Dashboard — LabourLink';
     (async () => {
       try {
-        const [p, s, j] = await Promise.all([
+        const [p, s, j, r] = await Promise.all([
           agencyService.getProfile(),
           agencyService.getStats(),
           agencyService.getJobs().catch(() => []),
+          agencyService.getRating().catch(() => null),
         ]);
         setProfile(p);
         setStats(s);
+        setRating(r as AgencyRating | null);
         const jobList = Array.isArray(j) ? j : [];
         setJobs(
           jobList.slice(0, 5).map((job: any) => ({
@@ -273,6 +276,82 @@ export default function AgencyDashboard() {
 
             {/* Side panel */}
             <div className="space-y-4">
+              {/* Worker Rating Widget */}
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div className="bg-gradient-to-r from-amber-500 to-orange-400 px-5 py-4">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Star className="size-4 text-white fill-white" />
+                    <h3 className="font-semibold text-white text-sm">Worker Rating</h3>
+                  </div>
+                  <p className="text-amber-100 text-xs">Based on complaint resolutions</p>
+                </div>
+                <div className="p-5">
+                  {!rating || rating.totalRatings === 0 ? (
+                    <div className="text-center py-2">
+                      <div className="text-3xl text-gray-300 dark:text-gray-600 mb-1">★★★★★</div>
+                      <p className="text-xs text-gray-400">No ratings yet</p>
+                      <p className="text-xs text-gray-400 mt-1">Ratings appear after resolving worker complaints</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* Big score display */}
+                      <div className="flex items-center gap-4 mb-4">
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-gray-900 dark:text-white leading-none">
+                            {rating.averageRating.toFixed(1)}
+                          </div>
+                          <div className="text-xs text-gray-400 mt-0.5">out of 5</div>
+                        </div>
+                        <div className="flex-1">
+                          <div className="text-xl leading-none mb-1">
+                            {[1,2,3,4,5].map(i => (
+                              <span key={i} className={i <= Math.round(rating.averageRating) ? 'text-amber-400' : 'text-gray-200 dark:text-gray-600'}>★</span>
+                            ))}
+                          </div>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            {rating.totalRatings} rating{rating.totalRatings !== 1 ? 's' : ''}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Star breakdown bars */}
+                      <div className="space-y-1.5">
+                        {[
+                          { stars: 5, count: rating.fiveStarCount, color: 'bg-emerald-400' },
+                          { stars: 1, count: rating.oneStarCount,  color: 'bg-red-400' },
+                        ].map(({ stars, count, color }) => {
+                          const pct = rating.totalRatings > 0 ? (count / rating.totalRatings) * 100 : 0;
+                          return (
+                            <div key={stars} className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 dark:text-gray-400 w-4 text-right">{stars}</span>
+                              <span className="text-amber-400 text-xs">★</span>
+                              <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
+                                <div
+                                  className={`${color} h-full rounded-full transition-all`}
+                                  style={{ width: `${pct}%` }}
+                                />
+                              </div>
+                              <span className="text-xs text-gray-400 w-5 text-right">{count}</span>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Sentiment label */}
+                      <div className={`mt-4 text-center text-xs font-medium px-3 py-1.5 rounded-full ${
+                        rating.averageRating >= 4
+                          ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300'
+                          : rating.averageRating >= 2.5
+                          ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300'
+                          : 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300'
+                      }`}>
+                        {rating.averageRating >= 4 ? '🟢 Highly Regarded' : rating.averageRating >= 2.5 ? '🟡 Mixed Feedback' : '🔴 Needs Improvement'}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* Performance snapshot */}
               <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-xl p-5">
                 <div className="flex items-center gap-2 mb-3">
