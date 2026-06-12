@@ -16,6 +16,7 @@ jobs:
 
     steps:
       - name: Trigger Amplify deploy webhook
+        continue-on-error: true
         run: |
           curl -X POST \
             -H "Content-Type: application/json" \
