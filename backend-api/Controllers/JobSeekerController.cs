@@ -259,7 +259,20 @@ public sealed class JobSeekerController : ControllerBase
         var seeker = await _db.JobSeekers.FirstOrDefaultAsync(j => j.UserId == userId, cancellationToken);
         if (seeker == null)
         {
-            return BadRequest(new MessageResponse { Message = "Job seeker profile not found" });
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+            if (user == null) return NotFound();
+
+            seeker = new JobSeeker
+            {
+                JobSeekerId = Guid.NewGuid(),
+                UserId = userId,
+                EducationLevel = EducationLevel.Secondary,
+                Qualification = "",
+                DesiredJobRole = "",
+                DesiredLocation = "",
+            };
+            _db.JobSeekers.Add(seeker);
+            await _db.SaveChangesAsync(cancellationToken);
         }
 
         var job = await _db.JobPostings.FirstOrDefaultAsync(j => j.JobId == jobId && j.Status == JobStatus.Published, cancellationToken);
@@ -399,7 +412,20 @@ public sealed class JobSeekerController : ControllerBase
         var seeker = await _db.JobSeekers.FirstOrDefaultAsync(j => j.UserId == userId, cancellationToken);
         if (seeker == null)
         {
-            return BadRequest(new MessageResponse { Message = "Job seeker profile not found" });
+            var user = await _db.Users.FirstOrDefaultAsync(u => u.UserId == userId, cancellationToken);
+            if (user == null) return NotFound();
+
+            seeker = new JobSeeker
+            {
+                JobSeekerId = Guid.NewGuid(),
+                UserId = userId,
+                EducationLevel = EducationLevel.Secondary,
+                Qualification = "",
+                DesiredJobRole = "",
+                DesiredLocation = "",
+            };
+            _db.JobSeekers.Add(seeker);
+            await _db.SaveChangesAsync(cancellationToken);
         }
 
         var exists = await _db.SavedJobs
@@ -420,6 +446,27 @@ public sealed class JobSeekerController : ControllerBase
         await _db.SaveChangesAsync(cancellationToken);
 
         return Ok(new MessageResponse { Message = "Job saved" });
+    }
+
+    [HttpDelete("saved-jobs/{jobId:guid}")]
+    [ProducesResponseType(typeof(MessageResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<MessageResponse>> UnsaveJob(Guid jobId, CancellationToken cancellationToken = default)
+    {
+        var userId = GetUserId();
+        var seeker = await _db.JobSeekers.FirstOrDefaultAsync(j => j.UserId == userId, cancellationToken);
+        if (seeker == null)
+            return Ok(new MessageResponse { Message = "Not found" });
+
+        var saved = await _db.SavedJobs.FirstOrDefaultAsync(
+            s => s.JobSeekerId == seeker.JobSeekerId && s.JobId == jobId, cancellationToken);
+
+        if (saved != null)
+        {
+            _db.SavedJobs.Remove(saved);
+            await _db.SaveChangesAsync(cancellationToken);
+        }
+
+        return Ok(new MessageResponse { Message = "Job removed from saved" });
     }
 
     [HttpGet("saved-jobs")]
