@@ -1,3 +1,7 @@
+# Demo credentials — delete before deploying
+DEMO_CREDENTIALS.md
+
+# ── Frontend ──────────────────────────────────────────────────────────────
 # Dependencies
 /node_modules
 
@@ -10,6 +14,48 @@ yarn-error.log*
 /dist
 /out
 
-# VS Code
-.vscode/
+# ── .NET Backend ──────────────────────────────────────────────────────────
+# Compiled output
+**/bin/
+**/obj/
+
+# dotnet publish output (auto-generated binaries — never commit)
+backend-published/
+
+# User-uploaded files (runtime data, not source)
+**/wwwroot/uploads/
+
+# Visual Studio
 .vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# NuGet packages (restored automatically)
+*.nupkg
+*.snupkg
+**/packages/
+!**/packages/build/
+nuget.config
+
+# App secrets & local overrides (keep appsettings.json, ignore local overrides)
+**/appsettings.Development.json
+**/appsettings.Local.json
+
+# Rider / JetBrains
+.idea/
+
+# OmniSharp / VS language server cache
+*.lscache
+
+# ── IDE & Misc ────────────────────────────────────────────────────────────
+.vscode/
+.claude/
+
+# Patch files
+*.patch
+
+# Credentials and local startup logs (never commit)
+credentails.txt
+backend-api/startup_*.txt

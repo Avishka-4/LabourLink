@@ -2,10 +2,14 @@ using System.Text;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using LabourLinkAPI.Data;
+using LabourLinkAPI.GraphQL;
+using LabourLinkAPI.GraphQL.Types;
+using LabourLinkAPI.Models.Entities;
 using LabourLinkAPI.Models.Enums;
 using LabourLinkAPI.Repository;
 using LabourLinkAPI.Services.Auth;
 using LabourLinkAPI.Services.Common;
+using LabourLinkAPI.Services.Email;
 using LabourLinkAPI.Validators.Auth;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Mvc;
@@ -17,6 +21,11 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services
     .AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.Converters.Add(
+            new System.Text.Json.Serialization.JsonStringEnumConverter());
+    })
     .ConfigureApiBehaviorOptions(options =>
     {
         options.InvalidModelStateResponseFactory = context =>
@@ -63,15 +72,13 @@ builder.Services
         };
     });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("WorkerOnly", policy => policy.RequireRole(nameof(UserRole.Worker)));
-    options.AddPolicy("JobSeekerOnly", policy => policy.RequireRole(nameof(UserRole.JobSeeker)));
-    options.AddPolicy("AgencyOnly", policy => policy.RequireRole(nameof(UserRole.RecruitmentAgency)));
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole(nameof(UserRole.Administrator)));
-});
+builder.Services.AddAuthorizationBuilder()
+    .AddPolicy("WorkerOnly", policy => policy.RequireRole(nameof(UserRole.Worker)))
+    .AddPolicy("JobSeekerOnly", policy => policy.RequireRole(nameof(UserRole.JobSeeker)))
+    .AddPolicy("AgencyOnly", policy => policy.RequireRole(nameof(UserRole.RecruitmentAgency)))
+    .AddPolicy("AdminOnly", policy => policy.RequireRole(nameof(UserRole.Administrator)));
 
-var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? Array.Empty<string>();
+var corsOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
@@ -127,11 +134,20 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
+builder.Services.Configure<SesOptions>(builder.Configuration.GetSection("Ses"));
+builder.Services.AddScoped<IEmailService, EmailService>();
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITokenService, TokenService>();
 builder.Services.AddScoped<IPasswordHashService, PasswordHashService>();
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+builder.Services
+    .AddGraphQLServer()
+    .AddQueryType<Query>()
+    .AddType<JobType>()
+    .AddType<NewsType>();
 
 var app = builder.Build();
 
@@ -147,11 +163,94 @@ app.UseHttpsRedirection();
 
 app.UseCors("Frontend");
 
+app.UseStaticFiles();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
 app.MapControllers();
+app.MapGraphQL();
+
+try { await SeedDemoUsersAsync(app); } catch (Exception ex) { app.Logger.LogWarning("Seed skipped (DB unavailable?): {Message}", ex.Message); }
+try { await EnsureSchemaColumnsAsync(app); } catch (Exception ex) { app.Logger.LogWarning("Schema migration skipped: {Message}", ex.Message); }
 
 app.Run();
+
+static async Task SeedDemoUsersAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<LabourLinkDbContext>();
+    var hasher = scope.ServiceProvider.GetRequiredService<IPasswordHashService>();
+
+    var demoUsers = new[]
+    {
+        new { Email = "admin@labourlink.demo",     Password = "Admin@123456",  Role = UserRole.Administrator,     Name = ("Admin", "User") },
+        new { Email = "worker@labourlink.demo",    Password = "Worker@123456", Role = UserRole.Worker,            Name = ("Demo", "Worker") },
+        new { Email = "jobseeker@labourlink.demo", Password = "Seeker@123456", Role = UserRole.JobSeeker,         Name = ("Demo", "Seeker") },
+        new { Email = "agency@labourlink.demo",    Password = "Agency@123456", Role = UserRole.RecruitmentAgency, Name = ("Demo", "Agency") },
+    };
+
+    foreach (var demo in demoUsers)
+    {
+        var exists = await db.Users.AnyAsync(u => u.Email == demo.Email);
+        if (exists) continue;
+
+        db.Users.Add(new User
+        {
+            UserId          = Guid.NewGuid(),
+            Email           = demo.Email,
+            PasswordHash    = hasher.Hash(demo.Password),
+            FirstName       = demo.Name.Item1,
+            LastName        = demo.Name.Item2,
+            Role            = demo.Role,
+            Status          = UserStatus.Active,
+            IsEmailVerified = true,
+            IsPhoneVerified = false,
+            CreatedAt       = DateTime.UtcNow,
+            UpdatedAt       = DateTime.UtcNow,
+        });
+    }
+
+    await db.SaveChangesAsync();
+}
+
+static async Task EnsureSchemaColumnsAsync(WebApplication app)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<LabourLinkDbContext>();
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE job_postings ADD COLUMN IF NOT EXISTS Benefits json DEFAULT (JSON_ARRAY());"
+    );
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE worker_complaints ADD COLUMN IF NOT EXISTS TargetAgencyName varchar(255) NULL;"
+    );
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE worker_complaints ADD COLUMN IF NOT EXISTS WorkerRating int NULL;"
+    );
+    await db.Database.ExecuteSqlRawAsync(
+        "ALTER TABLE job_applications MODIFY COLUMN JobSeekerId char(36) NULL;"
+    );
+    // Drop unique constraints that block auto-created agencies with placeholder values.
+    // Use raw ADO.NET so EF Core's command logger doesn't emit fail-level noise on repeat runs.
+    var conn = db.Database.GetDbConnection();
+    await conn.OpenAsync();
+    try
+    {
+        foreach (var idx in new[] { "IX_recruitment_agencies_CompanyRegistrationNumber", "IX_recruitment_agencies_LicenseNumber" })
+        {
+            try
+            {
+                using var cmd = conn.CreateCommand();
+                cmd.CommandText = $"ALTER TABLE recruitment_agencies DROP INDEX `{idx}`";
+                await cmd.ExecuteNonQueryAsync();
+            }
+            catch { /* index already dropped — safe to ignore */ }
+        }
+    }
+    finally
+    {
+        conn.Close();
+    }
+}
 
 public partial class Program { }
