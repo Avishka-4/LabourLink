@@ -10,7 +10,7 @@ import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
 import { authService } from '@/services/authService';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5007/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://labourlink-backend-env.eba-fjpwzbyr.ap-south-1.elasticbeanstalk.com/api';
 
 async function uploadDoc(token: string, key: DocKey, file: File): Promise<void> {
   const fd = new FormData();

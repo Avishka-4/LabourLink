@@ -7,7 +7,7 @@ import { AdCarousel } from '../components/ad-carousel';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
 import { useLanguage } from '../contexts/language-context';
 
-const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5007/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://labourlink-backend-env.eba-fjpwzbyr.ap-south-1.elasticbeanstalk.com/api';
 
 export function LandingPage() {
   const navigate = useNavigate();
