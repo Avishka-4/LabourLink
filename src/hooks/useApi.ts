@@ -1,4 +1,4 @@
-const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://localhost:5007/api';
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://labourlink-backend-env.eba-fjpwzbyr.ap-south-1.elasticbeanstalk.com/api';
 const TOKEN_KEY = 'token';
 const REFRESH_TOKEN_KEY = 'refreshToken';
 const ROLE_KEY = 'userRole';
@@ -105,7 +105,7 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
       },
     });
   } catch {
-    throw new Error('Cannot connect to the server. Please ensure the backend is running on port 5007.');
+    throw new Error('Cannot connect to the server. Please ensure the backend is running.');
   }
 
   if (response.status === 401 && !skipRefresh) {
@@ -124,7 +124,7 @@ export async function apiRequest<T>(path: string, options: ApiOptions = {}): Pro
         },
       });
     } catch {
-      throw new Error('Cannot connect to the server. Please ensure the backend is running on port 5007.');
+      throw new Error('Cannot connect to the server. Please ensure the backend is running.');
     }
 
     if (!retryResponse.ok) {
