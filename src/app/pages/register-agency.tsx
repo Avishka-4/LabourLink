@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { ThemeLanguageToggle } from '../components/theme-language-toggle';
 import { authService } from '@/services/authService';
+import { agencyService } from '@/services/agencyService';
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined) ?? 'http://labourlink-backend-env.eba-fjpwzbyr.ap-south-1.elasticbeanstalk.com/api';
 const ACCEPTED_EXTENSIONS = new Set(['.pdf', '.jpg', '.jpeg', '.png', '.webp']);
@@ -136,6 +137,16 @@ export function AgencyRegistration() {
 
       setUploadStatus('Signing in…');
       const session = await authService.login(formData.email, formData.password);
+
+      setUploadStatus('Creating agency profile…');
+      await agencyService.updateProfile({
+        name: formData.agencyName,
+        companyRegistrationNumber: formData.businessRegNumber,
+        licenseNumber: formData.sltdaNumber,
+        address: `${formData.address}, ${formData.district}`,
+        contactEmail: formData.email,
+        contactPhone: formData.phone,
+      });
 
       const entries = Object.entries(docs) as [AgencyDocKey, File][];
       for (let i = 0; i < entries.length; i++) {

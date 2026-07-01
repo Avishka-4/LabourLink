@@ -8,9 +8,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { useNavigate } from 'react-router';
 import { toast } from 'sonner';
 import { useLanguage } from '../contexts/language-context';
+import { authService } from '@/services/authService';
 
-const ADMIN_EMAIL = 'avishkanishada73@gamil.com';
-const ADMIN_PASSWORD = 'admin';
+// What the user types
+const CUSTOM_EMAILS = ['avishkanishada73@gamil.com', 'avishkanishada73@gmail.com'];
+const CUSTOM_PASSWORD = 'admin';
+
+// Real seeded backend admin (from Program.cs SeedDemoUsersAsync)
+const BACKEND_ADMIN_EMAIL = 'admin@labourlink.demo';
+const BACKEND_ADMIN_PASSWORD = 'Admin@123456';
 
 export function AdminLogin() {
   const navigate = useNavigate();
@@ -25,19 +31,28 @@ export function AdminLogin() {
     try {
       const trimmedEmail = email.trim().toLowerCase();
       const trimmedPassword = password.trim();
-      const isAdminEmail = trimmedEmail === 'avishkanishada73@gamil.com' || trimmedEmail === 'avishkanishada73@gmail.com';
-      if (isAdminEmail && trimmedPassword === ADMIN_PASSWORD) {
-        localStorage.setItem('token', 'admin-token');
-        localStorage.setItem('refreshToken', 'admin-refresh');
-        localStorage.setItem('userRole', 'Administrator');
-        localStorage.setItem('userId', 'admin-user');
-        toast.success(t('login_success_admin'));
-        navigate('/admin');
-      } else {
+
+      // Accept the user's custom credentials OR the real backend credentials
+      const isCustom = CUSTOM_EMAILS.includes(trimmedEmail) && trimmedPassword === CUSTOM_PASSWORD;
+      const isDirect = trimmedEmail === BACKEND_ADMIN_EMAIL && trimmedPassword === BACKEND_ADMIN_PASSWORD;
+
+      if (!isCustom && !isDirect) {
         toast.error('Invalid admin credentials');
+        return;
       }
-    } catch {
-      toast.error('Login failed');
+
+      // Authenticate with the REAL backend admin account to get a valid JWT token
+      const result = await authService.login(BACKEND_ADMIN_EMAIL, BACKEND_ADMIN_PASSWORD);
+
+      if (result.role !== 'Administrator') {
+        toast.error('This account does not have admin privileges');
+        return;
+      }
+
+      toast.success('Welcome, Administrator!');
+      navigate('/admin');
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Login failed. Make sure the backend is running.');
     } finally {
       setIsLoading(false);
     }
