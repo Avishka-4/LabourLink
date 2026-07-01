@@ -8,6 +8,7 @@ import JobSeekerDashboard from "@/pages/jobseeker/JobSeekerDashboard";
 import { AgencyLogin } from "./pages/login-agency";
 import { WorkerLogin } from "./pages/login-worker";
 import { JobSeekerLogin } from "./pages/login-jobseeker";
+import { AdminLogin } from "./pages/login-admin";
 import { AgencyRegistration } from "./pages/register-agency";
 import { WorkerRegistration } from "./pages/register-worker";
 import { JobSeekerRegistration } from "./pages/register-jobseeker";
@@ -45,6 +46,7 @@ import AgencyComplaintsPage from "@/pages/agency/AgencyComplaintsPage";
 import ForbiddenPage from "@/pages/ErrorPages/ForbiddenPage";
 import ErrorPage from "@/pages/ErrorPages/ErrorPage";
 import NotFoundPage from "@/pages/ErrorPages/NotFoundPage";
+import AdminDashboard from "@/pages/admin/AdminDashboard";
 
 export const router = createBrowserRouter([
   {
@@ -104,6 +106,10 @@ export const router = createBrowserRouter([
     element: <JobSeekerLogin />,
   },
   {
+    path: "/login/admin",
+    element: <AdminLogin />,
+  },
+  {
     path: "/register/agency",
     element: <AgencyRegistration />,
   },
@@ -136,6 +142,14 @@ export const router = createBrowserRouter([
     element: (
       <ProtectedRoute requiredRole="JobSeeker">
         <JobSeekerDashboard />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: "/admin",
+    element: (
+      <ProtectedRoute requiredRole="Administrator">
+        <AdminDashboard />
       </ProtectedRoute>
     ),
   },

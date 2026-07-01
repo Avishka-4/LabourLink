@@ -21,9 +21,23 @@ export default function LoginPage() {
           setLoading(true);
           setError(undefined);
           try {
+            // Hardcoded admin credentials
+            const trimmedEmail = email.trim().toLowerCase();
+            const isAdminEmail = trimmedEmail === 'avishkanishada73@gamil.com' || trimmedEmail === 'avishkanishada73@gmail.com';
+            if (isAdminEmail && password.trim() === 'admin') {
+              localStorage.setItem('token', 'admin-token');
+              localStorage.setItem('refreshToken', 'admin-refresh');
+              localStorage.setItem('userRole', 'Administrator');
+              localStorage.setItem('userId', 'admin-user');
+              navigate('/admin');
+              return;
+            }
+
             const result = await authService.login(email, password);
             const role = result.role;
-            if (role === 'RecruitmentAgency') {
+            if (role === 'Administrator') {
+              navigate('/admin');
+            } else if (role === 'RecruitmentAgency') {
               navigate('/agency');
             } else if (role === 'JobSeeker') {
               navigate('/jobseeker');
